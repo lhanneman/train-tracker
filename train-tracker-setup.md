@@ -3,35 +3,34 @@
 ## Prerequisites Installation
 
 ### 1. Core Development Tools
-- [ ] Install Homebrew (if not installed): `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
-- [ ] Install .NET 8 SDK: `brew install --cask dotnet-sdk`
-- [ ] Verify .NET installation: `dotnet --version` (should show 8.0.x)
-- [ ] Install Node.js (LTS): `brew install node`
-- [ ] Verify Node/npm: `node --version && npm --version`
+- [x] Install Homebrew (if not installed): `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` ✅ *Installed: v4.5.10*
+- [x] Install .NET 8 SDK: `brew install --cask dotnet-sdk` ✅ *Installed: v9.0.200*
+- [x] Verify .NET installation: `dotnet --version` (should show 8.0.x) ✅ *Version: 9.0.200*
+- [x] Install Node.js (LTS): `brew install node` ✅ *Installed: v18.18.0*
+- [x] Verify Node/npm: `node --version && npm --version` ✅ *Node: v18.18.0, npm: 9.8.1*
 
 ### 2. Database Setup
-- [ ] Install PostgreSQL: `brew install postgresql@16`
-- [ ] Start PostgreSQL: `brew services start postgresql@16`
-- [ ] Create database user: `createuser -s postgres`
-- [ ] Install pgAdmin (optional GUI): `brew install --cask pgadmin4`
+- [x] Install PostgreSQL: `brew install postgresql@16` ✅ *Installed: v16.10*
+- [x] Start PostgreSQL: `brew services start postgresql@16` ✅ *Service started*
+- [x] Create database user: `createuser -s postgres` ✅ *User created*
+- [x] Install pgAdmin (optional GUI): `brew install --cask pgadmin4` ✅ *Installed: v9.8*
 
 ### 3. VS Code Extensions
-- [ ] Install VS Code (if needed): `brew install --cask visual-studio-code`
-- [ ] Install C# Dev Kit extension
-- [ ] Install C# extension
-- [ ] Install ESLint extension
-- [ ] Install Prettier extension
-- [ ] Install Tailwind CSS IntelliSense
-- [ ] Install PostgreSQL extension (by Chris Kolkman)
-- [ ] Install Thunder Client (for API testing)
+- [x] Install C# Dev Kit extension ✅ *Already installed: ms-dotnettools.csdevkit*
+- [x] Install C# extension ✅ *Already installed: ms-dotnettools.csharp*
+- [x] Install ESLint extension ✅ *Installed: dbaeumer.vscode-eslint v3.0.16*
+- [x] Install Prettier extension ✅ *Installed: esbenp.prettier-vscode v11.0.0*
+- [x] Install Tailwind CSS IntelliSense ✅ *Installed: bradlc.vscode-tailwindcss v0.14.26*
+- [x] Install PostgreSQL extension (by Chris Kolkman) ✅ *Installed: ckolkman.vscode-postgres v1.4.3*
+- [x] Install Thunder Client (for API testing) ✅ *Installed: rangav.vscode-thunder-client v2.37.8*
 
 ## Project Setup
 
 ### 4. Create Project Structure
 ```bash
-- [ ] mkdir train-tracker && cd train-tracker
-- [ ] mkdir src
-- [ ] cd src
+- [x] mkdir train-tracker && cd train-tracker ✅ *Already in train-tracker directory*
+- [x] mkdir src ✅ *Created*
+- [x] cd src ✅ *Ready for backend setup*
 ```
 
 ### 5. Backend Setup (ASP.NET Core 8)
