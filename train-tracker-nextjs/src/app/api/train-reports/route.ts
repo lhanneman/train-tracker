@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import { pusherServer, PUSHER_CONFIG } from '@/lib/pusher'
 
 const prisma = new PrismaClient()
 
@@ -60,15 +61,29 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    const reportData = {
+      id: newReport.id,
+      isTrainCrossing: newReport.isTrainCrossing,
+      reportedAt: newReport.reportedAt.toISOString(),
+      userIpAddress: newReport.userIpAddress,
+      userAgent: newReport.userAgent,
+      sessionId: newReport.sessionId
+    }
+
+    // Broadcast the new report to all connected clients
+    try {
+      await pusherServer.trigger(
+        PUSHER_CONFIG.channel,
+        PUSHER_CONFIG.events.newReport,
+        reportData
+      )
+    } catch (pusherError) {
+      console.error('Failed to broadcast via Pusher:', pusherError)
+      // Continue even if Pusher fails - don't break the API
+    }
+
     return NextResponse.json({
-      data: {
-        id: newReport.id,
-        isTrainCrossing: newReport.isTrainCrossing,
-        reportedAt: newReport.reportedAt.toISOString(),
-        userIpAddress: newReport.userIpAddress,
-        userAgent: newReport.userAgent,
-        sessionId: newReport.sessionId
-      }
+      data: reportData
     })
   } catch (error) {
     console.error('Failed to create train report:', error)

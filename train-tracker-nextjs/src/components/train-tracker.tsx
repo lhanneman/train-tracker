@@ -6,6 +6,7 @@ import { RecentReports } from './recent-reports';
 import { StatusIndicator } from './status-indicator';
 import { TrainIcon, ActivityIcon } from 'lucide-react';
 import type { TrainReport } from '@/types';
+import { pusherClient, PUSHER_CONFIG } from '@/lib/pusher';
 
 export function TrainTracker() {
   const [latestReport, setLatestReport] = useState<TrainReport | null>(null);
@@ -70,10 +71,30 @@ export function TrainTracker() {
   useEffect(() => {
     loadData();
 
-    // Set up polling for updates every 30 seconds
-    const interval = setInterval(loadData, 30000);
+    // Set up Pusher real-time subscription
+    const channel = pusherClient.subscribe(PUSHER_CONFIG.channel);
 
-    return () => clearInterval(interval);
+    channel.bind(PUSHER_CONFIG.events.newReport, (newReport: TrainReport) => {
+      console.log('Received new train report via Pusher:', newReport);
+
+      // Update latest report
+      setLatestReport(newReport);
+
+      // Add to recent reports (prepend and limit to 20)
+      setRecentReports(prev => [newReport, ...prev].slice(0, 20));
+
+      // Update connection state to show we're receiving real-time data
+      setConnectionState('Connected');
+    });
+
+    // Set up polling as fallback every 60 seconds (less frequent since we have real-time)
+    const interval = setInterval(loadData, 60000);
+
+    return () => {
+      clearInterval(interval);
+      channel.unbind_all();
+      pusherClient.unsubscribe(PUSHER_CONFIG.channel);
+    };
   }, []);
 
   return (
