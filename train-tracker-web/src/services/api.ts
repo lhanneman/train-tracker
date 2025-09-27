@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { TrainReport, CreateTrainReportRequest, ApiResponse } from '../types';
+import type { TrainReport, CreateTrainReportRequest, ApiResponse } from '../types';
 
 const API_BASE_URL = 'http://localhost:5073/api';
 

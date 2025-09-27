@@ -8,7 +8,9 @@ A real-time train tracking application built with ASP.NET Core, React, and Postg
 - **Frontend**: React + TypeScript + Vite
 - **Database**: PostgreSQL 16
 - **Real-time**: SignalR
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS v4 + Modern UI Components
+- **Icons**: Lucide React
+- **Design System**: v0-inspired dark theme components
 
 ## Prerequisites
 
@@ -174,24 +176,53 @@ Update the password if you have one set for your PostgreSQL user.
    - Check version: `node --version`
    - Consider using nvm to manage Node versions
 
-4. **Database Doesn't Exist**
+4. **SignalR Connection Issues**
+   - Make sure backend is running before starting frontend
+   - Check browser console for connection errors
+   - Verify CORS settings in `Program.cs` include your frontend URL
+   - In development, React Strict Mode may cause duplicate connections (this is normal)
+
+5. **Database Doesn't Exist**
    ```sql
    -- Create database if it doesn't exist
    CREATE DATABASE train_tracker;
    ```
+
+## UI Components
+
+The frontend uses a modern component-based architecture with:
+
+- **Status Indicator**: Real-time train crossing status with animated effects
+- **Train Status Buttons**: Large, accessible buttons for reporting status
+- **Recent Reports**: Timeline of recent train reports with session tracking
+- **Connection Status**: Real-time SignalR connection indicator
+- **Responsive Layout**: Mobile-first design that works on all devices
+
+### Key UI Features
+
+- **Dark Theme**: Modern dark mode with custom CSS variables
+- **Animations**: Smooth transitions and pulse effects for active states
+- **Accessibility**: High contrast, large buttons, semantic HTML
+- **Icons**: Lucide React icons for consistent visual language
+- **Typography**: Clear hierarchy with appropriate font weights
 
 ## API Endpoints
 
 Once the API is running, you can explore all available endpoints at:
 http://localhost:5073/swagger
 
-## Features (In Development)
+## Features
 
-- Real-time train status updates via SignalR
-- Report train sightings
-- Mark crossing as clear
-- View recent train reports
-- Timestamp tracking for all reports
+- ✅ Real-time train status updates via SignalR
+- ✅ Report train sightings
+- ✅ Mark crossing as clear
+- ✅ View recent train reports with timestamps
+- ✅ Modern dark theme UI with animations
+- ✅ Responsive design for mobile and desktop
+- ✅ Connection status indicator
+- ✅ Report cooldown system (prevents spam)
+- ✅ Session-based user tracking
+- ✅ Real-time status indicator with visual effects
 
 ## Environment Variables
 

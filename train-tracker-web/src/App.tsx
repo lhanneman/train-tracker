@@ -1,21 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import TrainCrossingStatus from './components/TrainCrossingStatus';
-import ReportButtons from './components/ReportButtons';
-import RecentReports from './components/RecentReports';
-import ConnectionStatus from './components/ConnectionStatus';
-import { TrainReport, ConnectionState } from './types';
+import { useEffect, useState } from 'react';
+import { TrainStatusButtons } from './components/train-status-buttons';
+import { RecentReports } from './components/recent-reports';
+import { StatusIndicator } from './components/status-indicator';
+import { TrainIcon, ActivityIcon } from 'lucide-react';
+import type { TrainReport } from './types';
+import { ConnectionState } from './types';
 import { TrainReportsApi } from './services/api';
 import signalRService from './services/signalr';
 
 function App() {
   const [latestReport, setLatestReport] = useState<TrainReport | null>(null);
   const [recentReports, setRecentReports] = useState<TrainReport[]>([]);
-  const [loading, setLoading] = useState(true);
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected);
 
   // Load initial data
   const loadData = async () => {
-    setLoading(true);
     try {
       // Load latest report and recent reports in parallel
       const [latestResult, recentResult] = await Promise.all([
@@ -32,15 +31,21 @@ function App() {
       }
     } catch (error) {
       console.error('Failed to load initial data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   // Handle new report submission
-  const handleReportSubmitted = () => {
-    // Reload data after a successful report submission
-    loadData();
+  const handleReportSubmitted = async (isTrainCrossing: boolean) => {
+    try {
+      const result = await TrainReportsApi.createReport({ isTrainCrossing });
+      if (result.data) {
+        // Reload data after a successful report submission
+        await loadData();
+      }
+    } catch (error) {
+      console.error('Failed to submit report:', error);
+      throw error; // Re-throw so the component can handle it
+    }
   };
 
   // Handle real-time updates
@@ -56,6 +61,8 @@ function App() {
 
   // Initialize SignalR and load data
   useEffect(() => {
+    let isCleanedUp = false;
+
     const initializeApp = async () => {
       try {
         // Load initial data
@@ -65,10 +72,12 @@ function App() {
         const unsubscribeConnectionState = signalRService.onConnectionStateChange(setConnectionState);
         const unsubscribeNewReport = signalRService.onNewTrainReport(handleNewTrainReport);
 
-        // Start SignalR connection
-        await signalRService.start();
+        // Start SignalR connection only if not cleaned up
+        if (!isCleanedUp) {
+          await signalRService.start();
+        }
 
-        // Cleanup on unmount
+        // Return cleanup function
         return () => {
           unsubscribeConnectionState();
           unsubscribeNewReport();
@@ -76,79 +85,63 @@ function App() {
         };
       } catch (error) {
         console.error('Failed to initialize app:', error);
+        return null;
       }
     };
 
-    const cleanup = initializeApp();
+    const cleanupPromise = initializeApp();
 
     return () => {
-      cleanup.then(cleanupFn => cleanupFn?.());
+      isCleanedUp = true;
+      cleanupPromise.then(cleanupFn => cleanupFn?.());
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Connection Status */}
-      <ConnectionStatus connectionState={connectionState} />
-
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-              🚂 Train Tracker
-            </h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Real-time community-driven train crossing status.
-              Help others know when it's safe to cross!
-            </p>
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <TrainIcon className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-foreground">Train Tracker</h1>
+                <p className="text-sm text-muted-foreground">Real-time crossing status</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ActivityIcon className={`h-4 w-4 ${connectionState === ConnectionState.Connected ? "text-success" : "text-muted-foreground"}`} />
+              <span className="text-sm text-muted-foreground">
+                {connectionState === ConnectionState.Connected ? "Connected" :
+                 connectionState === ConnectionState.Connecting ? "Connecting..." :
+                 connectionState === ConnectionState.Reconnecting ? "Reconnecting..." : "Disconnected"}
+              </span>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          {/* Current Status */}
-          <section>
-            <TrainCrossingStatus
-              latestReport={latestReport}
-              loading={loading}
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Status and Controls */}
+          <div className="lg:col-span-2 space-y-6">
+            <StatusIndicator status={latestReport?.isTrainCrossing ?? null} />
+            <TrainStatusButtons
+              onStatusReport={handleReportSubmitted}
             />
-          </section>
-
-          {/* Report Buttons */}
-          <section className="bg-white rounded-lg shadow-md p-6">
-            <ReportButtons
-              onReportSubmitted={handleReportSubmitted}
-              disabled={connectionState === ConnectionState.Disconnected}
-            />
-          </section>
+          </div>
 
           {/* Recent Reports */}
-          <section>
-            <RecentReports
-              reports={recentReports}
-              loading={loading}
-            />
-          </section>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-500 text-sm">
-            <p className="mb-2">
-              Community-driven train crossing status tracker
-            </p>
-            <p>
-              Reports are submitted anonymously and updated in real-time.
-              Please report accurately to help your community.
-            </p>
+          <div className="lg:col-span-1">
+            <RecentReports reports={recentReports} />
           </div>
         </div>
-      </footer>
+      </main>
     </div>
   );
 }

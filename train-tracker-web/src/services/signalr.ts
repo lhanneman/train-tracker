@@ -1,16 +1,22 @@
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { TrainReport, ConnectionState } from '../types';
+import type { TrainReport } from '../types';
+import { ConnectionState } from '../types';
 
 export class SignalRService {
   private connection: HubConnection | null = null;
   private listeners: Map<string, ((...args: any[]) => void)[]> = new Map();
   private connectionStateListeners: ((state: ConnectionState) => void)[] = [];
 
-  constructor(private hubUrl: string = 'http://localhost:5073/trainhub') {}
+  private hubUrl: string;
+
+  constructor(hubUrl: string = 'http://localhost:5073/trainhub') {
+    this.hubUrl = hubUrl;
+  }
 
   // Start the SignalR connection
   async start(): Promise<void> {
-    if (this.connection?.state === 'Connected') {
+    if (this.connection?.state === 'Connected' || this.connection?.state === 'Connecting') {
+      console.log('SignalR already connected or connecting, skipping start');
       return;
     }
 
@@ -39,12 +45,14 @@ export class SignalRService {
     this.setupEventListeners();
 
     try {
+      console.log('Attempting SignalR connection to:', this.hubUrl);
       this.notifyConnectionState(ConnectionState.Connecting);
       await this.connection.start();
       this.notifyConnectionState(ConnectionState.Connected);
-      console.log('SignalR Connected');
+      console.log('SignalR Connected successfully');
     } catch (error) {
       console.error('SignalR Connection Error:', error);
+      console.error('Hub URL:', this.hubUrl);
       this.notifyConnectionState(ConnectionState.Disconnected);
       throw error;
     }
@@ -52,8 +60,13 @@ export class SignalRService {
 
   // Stop the SignalR connection
   async stop(): Promise<void> {
-    if (this.connection) {
-      await this.connection.stop();
+    if (this.connection && this.connection.state !== 'Disconnected') {
+      console.log('Stopping SignalR connection');
+      try {
+        await this.connection.stop();
+      } catch (error) {
+        console.log('Error stopping SignalR connection (this is normal):', error);
+      }
       this.connection = null;
       this.notifyConnectionState(ConnectionState.Disconnected);
     }

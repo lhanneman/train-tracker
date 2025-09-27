@@ -109,15 +109,15 @@
 - [x] Style components with Tailwind CSS for mobile-first responsive design ✅ *Styled*
 
 ### 9. Integration & Features
-- [ ] Test SignalR connection between frontend and backend
-- [ ] Implement "Train Crossing" report functionality (IsTrainCrossing = true)
-- [ ] Implement "All Clear" report functionality (IsTrainCrossing = false)
-- [ ] Add real-time updates via SignalR when new reports are submitted
-- [ ] Display recent reports (last 24 hours) with timestamps in local time
-- [ ] Add loading states and error handling for API calls
-- [ ] Implement optimistic UI updates for better user experience
-- [ ] Add visual indicators for current crossing status
-- [ ] Include user session tracking for report attribution
+- [x] Test SignalR connection between frontend and backend ✅ *SignalR hub accessible*
+- [x] Implement "Train Crossing" report functionality (IsTrainCrossing = true) ✅ *Working*
+- [x] Implement "All Clear" report functionality (IsTrainCrossing = false) ✅ *Working*
+- [x] Add real-time updates via SignalR when new reports are submitted ✅ *Implemented*
+- [x] Display recent reports (last 24 hours) with timestamps in local time ✅ *Working*
+- [x] Add loading states and error handling for API calls ✅ *Implemented*
+- [x] Implement optimistic UI updates for better user experience ✅ *Implemented*
+- [x] Add visual indicators for current crossing status ✅ *Working*
+- [x] Include user session tracking for report attribution ✅ *Working with cookies*
 
 ## Testing & Deployment Preparation
 
@@ -136,13 +136,8 @@
 - [ ] Create `.dockerignore` file
 - [ ] Create `docker-compose.yml` for local testing
 
-### 12. Deployment Setup (Fly.io)
-- [ ] Install Fly CLI: `brew install flyctl`
-- [ ] Sign up/login: `fly auth login`
-- [ ] Create Fly app: `fly launch`
-- [ ] Configure `fly.toml`
-- [ ] Set secrets: `fly secrets set ConnectionStrings__DefaultConnection="..."`
-- [ ] Deploy: `fly deploy`
+### 12. Deployment Setup (TBD - Azure App Service)
+
 
 ## Future Enhancements (Post-MVP)
 - [ ] Add user authentication (optional)
