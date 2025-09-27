@@ -31,63 +31,53 @@
 - [x] Save connection string for later ✅ *Saved with URL-encoded password*
 - [x] Create TrainReports table via SQL Editor ✅ *Table created successfully*
 
-### 4. Real-time Service Setup (Choose One)
+### 4. Real-time Service Setup with Pusher
 
-#### Option A: Pusher (Recommended)
-- [ ] Create Pusher account: https://pusher.com
-- [ ] Create new Pusher Channels app
-- [ ] Note down: App ID, Key, Secret, Cluster
-- [ ] Free tier: 200k messages/day, 100 concurrent connections
-
-#### Option B: Ably
-- [ ] Create Ably account: https://ably.com
-- [ ] Create new Ably app
-- [ ] Get API key from dashboard
-- [ ] Free tier: 6M messages/month, unlimited connections
+- [x] Create Pusher account: https://pusher.com ✅ *Account created*
+- [x] Create new Pusher Channels app ✅ *App ID: 2056315*
+- [x] Note down: App ID, Key, Secret, Cluster ✅ *Credentials saved to .env.local*
+- [x] Free tier: 200k messages/day, 100 concurrent connections ✅ *Active*
 
 ## Project Setup
 
 ### 5. Create Next.js Project
 ```bash
-- [ ] npx create-next-app@latest train-tracker --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"
-- [ ] cd train-tracker
-- [ ] npm install
+- [x] npx create-next-app@latest train-tracker --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" ✅ *Project: train-tracker-nextjs*
+- [x] cd train-tracker ✅ *Working directory set*
+- [x] npm install ✅ *Dependencies installed*
 ```
 
 ### 6. Install Dependencies
 ```bash
-- [ ] npm install prisma @prisma/client
-- [ ] npm install @types/node
-- [ ] npm install lucide-react
-- [ ] npm install date-fns
-- [ ] npm install clsx tailwind-merge
+- [x] npm install prisma @prisma/client ✅ *Installed: Prisma v6.16.2*
+- [x] npm install @types/node ✅ *Installed*
+- [x] npm install lucide-react ✅ *Installed: v0.469.0*
+- [x] npm install date-fns ✅ *Installed*
+- [x] npm install clsx tailwind-merge ✅ *Installed*
 ```
 
 #### Real-time Dependencies (Choose matching option from step 4)
 ```bash
 # For Pusher:
-- [ ] npm install pusher pusher-js
-
-# For Ably:
-- [ ] npm install ably
+- [x] npm install pusher pusher-js ✅ *Installed and configured*
 ```
 
 #### UI Components (Shadcn/ui)
 ```bash
-- [ ] npx shadcn@latest init
-- [ ] npx shadcn@latest add button
-- [ ] npx shadcn@latest add card
-- [ ] npx shadcn@latest add badge
+- [x] npx shadcn@latest init ✅ *Configured with Tailwind v4*
+- [x] npx shadcn@latest add button ✅ *Installed*
+- [x] npx shadcn@latest add card ✅ *Installed*
+- [x] npx shadcn@latest add badge ✅ *Installed*
 - [ ] npx shadcn@latest add toast
 ```
 
 ### 7. Database Setup with Prisma
 ```bash
-- [ ] npx prisma init
-- [ ] Update .env with Supabase DATABASE_URL
-- [ ] Create Prisma schema (see schema below)
-- [ ] npx prisma generate
-- [ ] npx prisma db push
+- [x] npx prisma init ✅ *Prisma initialized*
+- [x] Update .env with Supabase DATABASE_URL ✅ *URL-encoded connection string added*
+- [x] Create Prisma schema (see schema below) ✅ *TrainReport model created*
+- [x] npx prisma generate ✅ *Client generated*
+- [x] npx prisma db push ✅ *Schema pushed to Supabase*
 ```
 
 #### Prisma Schema (`prisma/schema.prisma`)
@@ -116,17 +106,17 @@ model TrainReport {
 ### 8. Environment Variables Setup
 Create `.env.local` file:
 ```bash
-- [ ] Add DATABASE_URL="your-supabase-connection-string"
-- [ ] Add NEXTAUTH_SECRET="your-secret-key" (generate with: openssl rand -base64 32)
-- [ ] Add NEXTAUTH_URL="http://localhost:3000"
+- [x] Add DATABASE_URL="your-supabase-connection-string" ✅ *Configured with URL-encoded password*
+- [x] Add NEXTAUTH_SECRET="your-secret-key" (generate with: openssl rand -base64 32) ✅ *Added*
+- [x] Add NEXTAUTH_URL="http://localhost:3000" ✅ *Added*
 
 # For Pusher:
-- [ ] Add PUSHER_APP_ID="your-app-id"
-- [ ] Add PUSHER_KEY="your-key"
-- [ ] Add PUSHER_SECRET="your-secret"
-- [ ] Add PUSHER_CLUSTER="your-cluster"
-- [ ] Add NEXT_PUBLIC_PUSHER_KEY="your-key"
-- [ ] Add NEXT_PUBLIC_PUSHER_CLUSTER="your-cluster"
+- [x] Add PUSHER_APP_ID="your-app-id" ✅ *App ID: 2056315*
+- [x] Add PUSHER_KEY="your-key" ✅ *Added*
+- [x] Add PUSHER_SECRET="your-secret" ✅ *Added*
+- [x] Add PUSHER_CLUSTER="your-cluster" ✅ *Cluster: us2*
+- [x] Add NEXT_PUBLIC_PUSHER_KEY="your-key" ✅ *Added*
+- [x] Add NEXT_PUBLIC_PUSHER_CLUSTER="your-cluster" ✅ *Added*
 
 # For Ably:
 - [ ] Add ABLY_API_KEY="your-ably-api-key"
@@ -137,66 +127,184 @@ Create `.env.local` file:
 Create these API routes in `src/app/api/`:
 
 ```bash
-- [ ] Create `src/app/api/train-reports/route.ts` (GET all reports)
-- [ ] Create `src/app/api/train-reports/latest/route.ts` (GET latest report)
-- [ ] Create `src/app/api/train-reports/create/route.ts` (POST new report)
+- [x] Create `src/app/api/train-reports/route.ts` (GET all reports) ✅ *GET/POST endpoints created*
+- [x] Create `src/app/api/train-status/route.ts` (GET current status) ✅ *Status endpoint created*
+- [x] Create `src/app/api/test/route.ts` (Database connection test) ✅ *Test endpoint working*
 ```
 
-### 10. Real-time Service Setup (Choose One)
+### 10. Real-time Service Setup with Pusher
 
-#### For Pusher:
 ```bash
-- [ ] Create `src/lib/pusher.ts` (server-side Pusher config)
-- [ ] Create `src/hooks/usePusher.ts` (client-side hook)
-- [ ] Add Pusher trigger to API routes
-```
-
-#### For Ably:
-```bash
-- [ ] Create `src/lib/ably.ts` (server-side Ably config)
-- [ ] Create `src/hooks/useAbly.ts` (client-side hook)
-- [ ] Add Ably publish to API routes
+- [x] Create `src/lib/pusher.ts` (server-side Pusher config) ✅ *Server/client config created*
+- [x] Add Pusher trigger to API routes ✅ *Broadcasting on new reports*
+- [x] Integrate Pusher client in React components ✅ *Real-time updates working*
 ```
 
 ### 11. UI Components Migration
 Migrate existing v0 components to Next.js structure:
 ```bash
-- [ ] Create `src/components/ui/` folder for base components
-- [ ] Create `src/components/train-status-indicator.tsx`
-- [ ] Create `src/components/train-status-buttons.tsx`
-- [ ] Create `src/components/recent-reports.tsx`
-- [ ] Update imports to use Next.js paths
-- [ ] Update components to use Next.js Image component
+- [x] Create `src/components/ui/` folder for base components ✅ *Shadcn/ui components*
+- [x] Create `src/components/status-indicator.tsx` ✅ *Status indicator with dark theme*
+- [x] Create `src/components/train-status-buttons.tsx` ✅ *Report buttons with cooldown*
+- [x] Create `src/components/recent-reports.tsx` ✅ *Reports list with animations*
+- [x] Update imports to use Next.js paths ✅ *@/ aliases configured*
+- [x] Create `src/types/index.ts` for TypeScript types ✅ *TrainReport interface*
 ```
 
 ### 12. Main Page Setup
 ```bash
-- [ ] Update `src/app/page.tsx` with train tracker UI
-- [ ] Create `src/app/layout.tsx` with proper metadata
-- [ ] Add global styles to `src/app/globals.css`
-- [ ] Configure Tailwind config for dark theme
+- [x] Update `src/app/page.tsx` with train tracker UI ✅ *TrainTracker component integrated*
+- [x] Create `src/components/train-tracker.tsx` main component ✅ *Client component with state management*
+- [x] Add global styles to `src/app/globals.css` ✅ *Dark theme and animations*
+- [x] Configure Tailwind config for dark theme ✅ *Tailwind v4 with custom CSS variables*
 ```
 
 ## Development & Testing
 
 ### 13. Local Development
 ```bash
-- [ ] Run development server: `npm run dev`
-- [ ] Test database connection: Check Prisma Studio `npx prisma studio`
-- [ ] Test API endpoints: Use browser or Postman
-- [ ] Test real-time functionality: Open multiple browser tabs
+- [x] Run development server: `npm run dev` ✅ *Running on http://localhost:3000*
+- [x] Test database connection: Check Prisma Studio `npx prisma studio` ✅ *Connection working*
+- [x] Test API endpoints: Use browser or Postman ✅ */api/test, /api/train-reports, /api/train-status*
+- [x] Test real-time functionality: Open multiple browser tabs ✅ *Pusher real-time working*
 ```
 
 ### 14. Database Management
 ```bash
-- [ ] View data: `npx prisma studio`
-- [ ] Reset database: `npx prisma db push --force-reset`
-- [ ] Generate types: `npx prisma generate`
+- [x] View data: `npx prisma studio` ✅ *Available at http://localhost:5555*
+- [x] Reset database: `npx prisma db push --force-reset` ✅ *Schema synced*
+- [x] Generate types: `npx prisma generate` ✅ *TypeScript types generated*
 ```
 
 ## Deployment Preparation
 
-### 15. Vercel Deployment Setup
+## Production Considerations
+
+### 15. Data Integrity & Conflict Resolution
+Important features to implement for production:
+
+#### Conflicting Reports Handling
+```bash
+- [ ] Implement weighted voting system based on recent reports
+- [ ] Add confidence scoring for status determination
+- [ ] Track user reliability over time (optional)
+- [ ] Flag suspicious patterns (same IP/session rapid conflicting reports)
+```
+
+**Strategies to Consider:**
+- **Time-weighted consensus**: Recent reports (last 5-10 minutes) carry more weight
+- **Majority rules with confidence**: If 3+ reports say "clear" vs 1 "crossing", trust majority
+- **Suspicious behavior detection**: Flag users submitting conflicting reports rapidly
+- **Manual override**: Admin dashboard for moderating disputed reports (future enhancement)
+
+#### Auto-expiration of Train Crossing Status
+```bash
+- [ ] Add auto-expiration for "train crossing" status after 10 minutes
+- [ ] Create scheduled job or API route to handle expiration
+- [ ] Update UI to show time remaining for crossing status
+- [ ] Broadcast expiration events via Pusher
+```
+
+**Implementation Options:**
+1. **Client-side timer**: Show countdown, auto-refresh after 10 minutes
+2. **Scheduled API route**: Vercel Cron Jobs to auto-expire old crossings
+3. **Database triggers**: PostgreSQL functions to auto-update expired statuses
+4. **Hybrid approach**: Client countdown + server-side validation
+
+### 16. Enhanced Schema for Production
+Consider extending the Prisma schema:
+
+```prisma
+model TrainReport {
+  id             Int      @id @default(autoincrement())
+  isTrainCrossing Boolean
+  reportedAt     DateTime @default(now())
+  expiresAt      DateTime? // Auto-calculated for crossing reports
+  userIpAddress  String
+  userAgent      String
+  sessionId      String
+  confidence     Float    @default(1.0) // User reliability score
+  isExpired      Boolean  @default(false)
+  flaggedAt      DateTime? // For suspicious reports
+
+  @@map("TrainReports")
+  @@index([reportedAt])
+  @@index([expiresAt])
+  @@index([isExpired, reportedAt])
+}
+
+model UserSession {
+  sessionId      String   @id
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  reportCount    Int      @default(0)
+  reliabilityScore Float  @default(1.0)
+  isFlagged      Boolean  @default(false)
+
+  @@map("UserSessions")
+}
+```
+
+### 17. Status Determination Logic
+```bash
+- [ ] Implement smart status calculation in /api/train-status
+- [ ] Consider only non-expired reports from last 10 minutes
+- [ ] Weight reports by user reliability and recency
+- [ ] Handle edge cases (no recent reports, all expired, etc.)
+```
+
+**Example Algorithm:**
+```typescript
+function calculateTrainStatus(reports: TrainReport[]): boolean | null {
+  // Only consider reports from last 10 minutes that aren't expired
+  const recentReports = reports.filter(r =>
+    !r.isExpired &&
+    r.reportedAt > new Date(Date.now() - 10 * 60 * 1000)
+  );
+
+  if (recentReports.length === 0) return null;
+
+  // Weight by recency and user reliability
+  const weightedVotes = recentReports.map(r => ({
+    vote: r.isTrainCrossing,
+    weight: r.confidence * getRecencyWeight(r.reportedAt)
+  }));
+
+  const crossingWeight = weightedVotes
+    .filter(v => v.vote)
+    .reduce((sum, v) => sum + v.weight, 0);
+
+  const clearWeight = weightedVotes
+    .filter(v => !v.vote)
+    .reduce((sum, v) => sum + v.weight, 0);
+
+  return crossingWeight > clearWeight;
+}
+```
+
+### 18. Auto-Expiration Implementation
+```bash
+- [ ] Create /api/expire-crossings API route
+- [ ] Set up Vercel Cron Job to run every minute
+- [ ] Update expired crossing reports to set isExpired = true
+- [ ] Broadcast status changes via Pusher when expiration occurs
+```
+
+**Vercel Cron Job** (`vercel.json`):
+```json
+{
+  "cron": [
+    {
+      "path": "/api/expire-crossings",
+      "schedule": "* * * * *"
+    }
+  ]
+}
+```
+
+## Deployment
+
+### 19. Vercel Deployment Setup
 ```bash
 - [ ] Install Vercel CLI: `npm i -g vercel`
 - [ ] Login to Vercel: `vercel login`
@@ -226,16 +334,16 @@ Add these to Vercel dashboard:
 ### 18. Data Migration (Optional)
 If you want to keep existing data:
 ```bash
-- [ ] Export current PostgreSQL data: `pg_dump train_tracker > backup.sql`
-- [ ] Import to Supabase via dashboard or psql
-- [ ] Verify data integrity with Prisma Studio
+- [x] Export current PostgreSQL data: `pg_dump train_tracker > backup.sql` ✅ *Not needed - fresh start*
+- [x] Import to Supabase via dashboard or psql ✅ *Using fresh database*
+- [x] Verify data integrity with Prisma Studio ✅ *Schema verified*
 ```
 
 ### 19. Clean Up Old Stack (After Migration)
 ```bash
-- [ ] Archive or remove ASP.NET Core backend
-- [ ] Archive or remove old React Vite frontend
-- [ ] Keep documentation for reference
+- [x] Archive or remove ASP.NET Core backend ✅ *Removed src/ directory*
+- [x] Archive or remove old React Vite frontend ✅ *Removed train-tracker-web/ directory*
+- [x] Keep documentation for reference ✅ *Setup docs preserved*
 ```
 
 ## Key Benefits of New Stack
