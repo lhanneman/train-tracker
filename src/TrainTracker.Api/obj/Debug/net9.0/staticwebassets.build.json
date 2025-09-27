@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "B3fmx+PLup1jajeS15N1zZG0KtQZFCzxvUwpyhxdzUA=",
+  "Source": "TrainTracker.Api",
+  "BasePath": "_content/TrainTracker.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
