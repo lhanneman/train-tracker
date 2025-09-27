@@ -1,241 +1,260 @@
 # Train Tracker Application
 
-A real-time train tracking application built with ASP.NET Core, React, and PostgreSQL.
+A modern real-time train tracking application built with Next.js, Prisma, and Pusher.
 
-## Tech Stack
+## 🚀 Tech Stack
 
-- **Backend**: ASP.NET Core 8 Web API
-- **Frontend**: React + TypeScript + Vite
-- **Database**: PostgreSQL 16
-- **Real-time**: SignalR
-- **Styling**: Tailwind CSS v4 + Modern UI Components
+- **Framework**: Next.js 14 (full-stack React framework with Turbopack)
+- **Database**: PostgreSQL via Supabase (managed cloud database)
+- **ORM**: Prisma (type-safe database access)
+- **Real-time**: Pusher Channels (managed WebSocket service)
+- **Styling**: Tailwind CSS v4 + Shadcn/ui components
 - **Icons**: Lucide React
-- **Design System**: v0-inspired dark theme components
+- **Deployment**: Vercel (optimized for Next.js)
+- **Design**: Modern dark theme with v0-inspired components
 
-## Prerequisites
+## ✨ Features
 
-- .NET 8+ SDK
-- Node.js 18+
-- PostgreSQL 16
-- npm or yarn
+- ✅ **Real-time train status updates** via Pusher
+- ✅ **Report train crossings and clear tracks**
+- ✅ **View recent reports** with timestamps and session tracking
+- ✅ **Beautiful dark theme UI** with smooth animations
+- ✅ **Responsive design** for mobile and desktop
+- ✅ **Connection status indicator** shows real-time connectivity
+- ✅ **60-second cooldown system** prevents spam reporting
+- ✅ **Auto-expiring status** (crossing reports expire after 10 minutes)
+- ✅ **Conflict resolution** with weighted voting system
+- ✅ **Type-safe API** with full TypeScript integration
 
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 train-tracker/
-├── src/
-│   └── TrainTracker.Api/       # ASP.NET Core Web API
-├── train-tracker-web/          # React frontend
-└── train-tracker-setup.md      # Detailed setup checklist
+├── train-tracker-nextjs/           # Next.js 14 application
+│   ├── src/
+│   │   ├── app/                    # App Router (pages and API routes)
+│   │   │   ├── api/                # API endpoints
+│   │   │   │   ├── train-reports/  # GET/POST train reports
+│   │   │   │   ├── train-status/   # GET current status
+│   │   │   │   └── test/           # Database connection test
+│   │   │   ├── globals.css         # Global styles with dark theme
+│   │   │   └── page.tsx            # Main train tracker page
+│   │   ├── components/             # React components
+│   │   │   ├── ui/                 # Shadcn/ui base components
+│   │   │   ├── train-tracker.tsx   # Main app component
+│   │   │   ├── status-indicator.tsx
+│   │   │   ├── train-status-buttons.tsx
+│   │   │   └── recent-reports.tsx
+│   │   ├── lib/                    # Utilities
+│   │   │   └── pusher.ts           # Pusher client/server config
+│   │   └── types/                  # TypeScript type definitions
+│   ├── prisma/                     # Database schema and migrations
+│   └── .env.local                  # Environment variables
+├── train-tracker-setup-nextjs.md   # Detailed setup checklist
+└── README.md                       # This file
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Database Setup
+### Prerequisites
 
-Make sure PostgreSQL is installed and running:
+- Node.js 18+
+- npm or yarn
+- Supabase account (for managed PostgreSQL)
+- Pusher account (for real-time updates)
+
+### 1. Clone and Install
 
 ```bash
-# Start PostgreSQL service (if not already running)
-brew services start postgresql@16
-
-# Connect to PostgreSQL
-psql -U postgres
-
-# Create the database (if it doesn't exist)
-CREATE DATABASE train_tracker;
-
-# Exit psql
-\q
+git clone <your-repo-url>
+cd train-tracker/train-tracker-nextjs
+npm install
 ```
 
-### 2. Backend API
+### 2. Environment Setup
 
-Navigate to the API directory and run:
+Create `.env.local` file:
 
 ```bash
-cd src/TrainTracker.Api
-dotnet run
+# Database (Supabase)
+DATABASE_URL="postgresql://postgres.xxx:password@aws-1-us-east-2.pooler.supabase.com:6543/postgres"
+
+# Authentication
+NEXTAUTH_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Real-time (Pusher)
+PUSHER_APP_ID="your-app-id"
+PUSHER_KEY="your-key"
+PUSHER_SECRET="your-secret"
+PUSHER_CLUSTER="us2"
+NEXT_PUBLIC_PUSHER_KEY="your-key"
+NEXT_PUBLIC_PUSHER_CLUSTER="us2"
 ```
 
-The API will start at: http://localhost:5073
-- Swagger documentation: http://localhost:5073/swagger
-
-### 3. Frontend Application
-
-In a new terminal, navigate to the frontend directory and run:
+### 3. Database Setup
 
 ```bash
-cd train-tracker-web
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database
+npx prisma db push
+
+# (Optional) Open database GUI
+npx prisma studio
+```
+
+### 4. Run Development Server
+
+```bash
 npm run dev
 ```
 
-The frontend will start at: http://localhost:5173
+Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-## Development Commands
-
-### Backend Commands
+## 🛠️ Development Commands
 
 ```bash
-# Navigate to API directory
-cd src/TrainTracker.Api
-
-# Restore packages
-dotnet restore
-
-# Build the project
-dotnet build
-
-# Run the API
-dotnet run
-
-# Run with hot reload
-dotnet watch run
-
-# Add Entity Framework migration
-dotnet ef migrations add <MigrationName>
-
-# Update database
-dotnet ef database update
-```
-
-### Frontend Commands
-
-```bash
-# Navigate to frontend directory
-cd train-tracker-web
-
-# Install dependencies
-npm install
-
-# Run development server
+# Start development server
 npm run dev
 
 # Build for production
 npm run build
 
-# Preview production build
-npm run preview
+# Start production server
+npm start
+
+# Database commands
+npx prisma studio        # Open database GUI
+npx prisma generate      # Regenerate Prisma client
+npx prisma db push       # Push schema changes
+npx prisma db pull       # Pull schema from database
+
+# Linting and formatting
+npm run lint            # Run ESLint
+npm run lint:fix        # Fix ESLint issues
 ```
 
-## Database Management
+## 🗄️ Database Schema
 
-### PostgreSQL Commands
+```prisma
+model TrainReport {
+  id             Int      @id @default(autoincrement())
+  isTrainCrossing Boolean
+  reportedAt     DateTime @default(now())
+  userIpAddress  String
+  userAgent      String
+  sessionId      String
 
-```bash
-# Connect to PostgreSQL
-psql -U postgres
-
-# Connect to train_tracker database
-\c train_tracker
-
-# List all tables
-\dt
-
-# View table structure
-\d table_name
-
-# Exit psql
-\q
-```
-
-### Connection String
-
-The database connection string is configured in `src/TrainTracker.Api/appsettings.Development.json`:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=train_tracker;Username=postgres;Password="
-  }
+  @@map("TrainReports")
 }
 ```
 
-Update the password if you have one set for your PostgreSQL user.
+## 🌐 API Endpoints
 
-## Troubleshooting
+- `GET /api/train-reports` - Fetch recent train reports
+- `POST /api/train-reports` - Submit new train report
+- `GET /api/train-status` - Get current train crossing status
+- `GET /api/test` - Test database connection
+
+## 🎨 UI Components
+
+### Core Components
+
+- **TrainTracker**: Main application component with state management
+- **StatusIndicator**: Real-time status display with visual indicators
+- **TrainStatusButtons**: Large buttons for reporting with cooldown
+- **RecentReports**: Timeline of recent reports with animations
+
+### Design Features
+
+- **Dark Theme**: Modern dark mode with blue accents
+- **Animations**: Pulse effects, slide-in animations, smooth transitions
+- **Responsive**: Mobile-first design that works on all devices
+- **Accessibility**: High contrast, semantic HTML, keyboard navigation
+- **Real-time**: Instant updates across all connected clients
+
+## ⚡ Real-time Architecture
+
+```
+User Reports → Next.js API → Database → Pusher → All Connected Clients
+```
+
+1. User submits report via UI
+2. API saves to database and broadcasts via Pusher
+3. All connected clients receive update instantly
+4. UI updates automatically without page refresh
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login and deploy
+vercel login
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+Add environment variables in Vercel dashboard.
+
+### Environment Variables for Production
+
+- `DATABASE_URL`: Supabase production connection string
+- `NEXTAUTH_SECRET`: Authentication secret
+- `NEXTAUTH_URL`: Your production domain
+- `PUSHER_*`: All Pusher credentials
+
+## 🔧 Troubleshooting
 
 ### Common Issues
 
-1. **Port Already in Use**
-   - Backend default port: 5073
-   - Frontend default port: 5173
-   - Check if ports are free: `lsof -i :5073` or `lsof -i :5173`
+1. **Database Connection Errors**
+   - Check Supabase connection string
+   - Ensure URL encoding for special characters in password
+   - Verify network access to Supabase
 
-2. **PostgreSQL Connection Issues**
-   ```bash
-   # Check if PostgreSQL is running
-   brew services list
-
-   # Restart PostgreSQL
-   brew services restart postgresql@16
-   ```
-
-3. **Node Version Issues**
-   - The frontend requires Node.js 18+
-   - Check version: `node --version`
-   - Consider using nvm to manage Node versions
-
-4. **SignalR Connection Issues**
-   - Make sure backend is running before starting frontend
+2. **Real-time Not Working**
+   - Check Pusher credentials in `.env.local`
+   - Verify Pusher app is active
    - Check browser console for connection errors
-   - Verify CORS settings in `Program.cs` include your frontend URL
-   - In development, React Strict Mode may cause duplicate connections (this is normal)
 
-5. **Database Doesn't Exist**
-   ```sql
-   -- Create database if it doesn't exist
-   CREATE DATABASE train_tracker;
-   ```
+3. **Build Errors**
+   - Check TypeScript errors: `npm run type-check`
+   - Verify all environment variables are set
+   - Check for missing dependencies
 
-## UI Components
+4. **Prisma Issues**
+   - Regenerate client: `npx prisma generate`
+   - Check schema syntax in `prisma/schema.prisma`
+   - Verify database schema matches Prisma schema
 
-The frontend uses a modern component-based architecture with:
+## 📚 Additional Resources
 
-- **Status Indicator**: Real-time train crossing status with animated effects
-- **Train Status Buttons**: Large, accessible buttons for reporting status
-- **Recent Reports**: Timeline of recent train reports with session tracking
-- **Connection Status**: Real-time SignalR connection indicator
-- **Responsive Layout**: Mobile-first design that works on all devices
+- **Setup Guide**: See `train-tracker-setup-nextjs.md` for detailed setup instructions
+- **Next.js Docs**: [nextjs.org/docs](https://nextjs.org/docs)
+- **Prisma Docs**: [prisma.io/docs](https://www.prisma.io/docs)
+- **Pusher Docs**: [pusher.com/docs](https://pusher.com/docs)
+- **Supabase Docs**: [supabase.com/docs](https://supabase.com/docs)
 
-### Key UI Features
+## 🔄 Migration Notes
 
-- **Dark Theme**: Modern dark mode with custom CSS variables
-- **Animations**: Smooth transitions and pulse effects for active states
-- **Accessibility**: High contrast, large buttons, semantic HTML
-- **Icons**: Lucide React icons for consistent visual language
-- **Typography**: Clear hierarchy with appropriate font weights
+This application was migrated from ASP.NET Core + React + SignalR to Next.js + Prisma + Pusher for:
+- **Simplified deployment** (single Vercel deployment vs multiple services)
+- **Better performance** (Next.js optimizations and edge functions)
+- **Improved developer experience** (full-stack TypeScript, hot reload)
+- **Lower complexity** (managed services vs self-hosted infrastructure)
 
-## API Endpoints
-
-Once the API is running, you can explore all available endpoints at:
-http://localhost:5073/swagger
-
-## Features
-
-- ✅ Real-time train status updates via SignalR
-- ✅ Report train sightings
-- ✅ Mark crossing as clear
-- ✅ View recent train reports with timestamps
-- ✅ Modern dark theme UI with animations
-- ✅ Responsive design for mobile and desktop
-- ✅ Connection status indicator
-- ✅ Report cooldown system (prevents spam)
-- ✅ Session-based user tracking
-- ✅ Real-time status indicator with visual effects
-
-## Environment Variables
-
-For production deployment, set these environment variables:
-
-- `ConnectionStrings__DefaultConnection`: PostgreSQL connection string
-- `ASPNETCORE_ENVIRONMENT`: Set to `Production` for production deployment
-- `CORS__AllowedOrigins`: Frontend URL(s) for CORS configuration
-
-## License
+## 📄 License
 
 [Your License Here]
 
-## Contributing
+## 🤝 Contributing
 
 [Your Contributing Guidelines Here]
