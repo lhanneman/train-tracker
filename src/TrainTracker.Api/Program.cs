@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TrainTracker.Api.Data;
+using TrainTracker.Api.Hubs;
+using TrainTracker.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,9 @@ builder.Services.AddCors(options =>
 // Add SignalR
 builder.Services.AddSignalR();
 
+// Add custom services
+builder.Services.AddScoped<IUserInfoService, UserInfoService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -43,7 +48,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Map SignalR hubs (we'll add this later)
-// app.MapHub<TrainHub>("/trainhub");
+// Map SignalR hub
+app.MapHub<TrainHub>("/trainhub");
 
 app.Run();

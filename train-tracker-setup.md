@@ -79,34 +79,45 @@
 ## Core Implementation Tasks
 
 ### 7. Backend Implementation
-- [ ] Create `Models/Train.cs` entity
-- [ ] Create `Models/TrainReport.cs` entity
-- [ ] Create `Data/TrainTrackerContext.cs` DbContext
-- [ ] Create `Hubs/TrainHub.cs` SignalR hub
-- [ ] Create `Controllers/TrainReportsController.cs`
-- [ ] Configure CORS for frontend URL
-- [ ] Configure SignalR in `Program.cs`
-- [ ] Add database migration: `dotnet ef migrations add InitialCreate`
-- [ ] Update database: `dotnet ef database-update`
+- [x] Update `Models/TrainReport.cs` entity for simplified user reports ✅ *Updated*
+  - IsTrainCrossing (boolean) - true if train is crossing, false if tracks are clear
+  - ReportedAt (DateTime UTC) - when the report was made
+  - UserIpAddress (string) - user's IP address
+  - UserAgent (string) - browser/device info
+  - SessionId (string) - unique session identifier
+- [x] Remove `Models/Train.cs` entity (not needed for simplified approach) ✅ *Removed*
+- [x] Update `Data/TrainTrackerContext.cs` DbContext for new model structure ✅ *Updated*
+- [x] Create `Hubs/TrainHub.cs` SignalR hub for real-time updates ✅ *Created*
+- [x] Create `Controllers/TrainReportsController.cs` with endpoints: ✅ *Created*
+  - POST /api/trainreports - submit new report
+  - GET /api/trainreports/recent - get recent reports (last 24 hours)
+  - GET /api/trainreports/latest - get most recent report status
+- [x] Add IP address and User-Agent extraction middleware/service ✅ *UserInfoService created*
+- [x] Configure SignalR in `Program.cs` ✅ *Configured*
+- [x] Add database migration: `dotnet ef migrations add InitialCreate` ✅ *Migration created*
+- [x] Update database: `dotnet ef database update` ✅ *Database updated*
 
 ### 8. Frontend Implementation
-- [ ] Create `src/services/api.ts` for API calls
-- [ ] Create `src/services/signalr.ts` for SignalR connection
-- [ ] Create `src/types/index.ts` for TypeScript interfaces
-- [ ] Create `src/components/TrainStatus.tsx` component
-- [ ] Create `src/components/ReportButton.tsx` component
-- [ ] Create `src/components/RecentReports.tsx` component
-- [ ] Update `App.tsx` with main layout
-- [ ] Style components with Tailwind CSS
+- [x] Create `src/types/index.ts` for TypeScript interfaces (TrainReport type) ✅ *Created*
+- [x] Create `src/services/api.ts` for API calls to backend endpoints ✅ *Created*
+- [x] Create `src/services/signalr.ts` for SignalR connection and real-time updates ✅ *Created*
+- [x] Create `src/components/TrainCrossingStatus.tsx` - displays current status ✅ *Created*
+- [x] Create `src/components/ReportButtons.tsx` - "Train Crossing" and "All Clear" buttons ✅ *Created*
+- [x] Create `src/components/RecentReports.tsx` - list of recent reports with timestamps ✅ *Created*
+- [x] Create `src/components/ConnectionStatus.tsx` - SignalR connection indicator ✅ *Created*
+- [x] Update `App.tsx` with main layout and component integration ✅ *Updated*
+- [x] Style components with Tailwind CSS for mobile-first responsive design ✅ *Styled*
 
 ### 9. Integration & Features
 - [ ] Test SignalR connection between frontend and backend
-- [ ] Implement "Report Train" functionality
-- [ ] Implement "All Clear" functionality
-- [ ] Add real-time updates via SignalR
-- [ ] Display recent reports with timestamps
-- [ ] Add loading states and error handling
-- [ ] Implement optimistic UI updates
+- [ ] Implement "Train Crossing" report functionality (IsTrainCrossing = true)
+- [ ] Implement "All Clear" report functionality (IsTrainCrossing = false)
+- [ ] Add real-time updates via SignalR when new reports are submitted
+- [ ] Display recent reports (last 24 hours) with timestamps in local time
+- [ ] Add loading states and error handling for API calls
+- [ ] Implement optimistic UI updates for better user experience
+- [ ] Add visual indicators for current crossing status
+- [ ] Include user session tracking for report attribution
 
 ## Testing & Deployment Preparation
 

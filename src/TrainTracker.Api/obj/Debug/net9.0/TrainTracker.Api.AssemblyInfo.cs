@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TrainTracker.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f1036f26fbc3c01d31c7b8749da552712bd2816f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a09f52be08838428b6ca933e3b64ed00c163e250")]
 [assembly: System.Reflection.AssemblyProductAttribute("TrainTracker.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TrainTracker.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
