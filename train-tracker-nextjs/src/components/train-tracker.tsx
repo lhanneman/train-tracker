@@ -176,36 +176,39 @@ export function TrainTracker() {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          {/* Mobile: Stack elements vertically, Desktop: Side by side */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Logo and Title */}
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
+              <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                 <TrainIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-foreground">Train Tracker</h1>
-                <p className="text-sm text-muted-foreground">Real-time crossing status</p>
+                <h1 className="text-lg sm:text-xl font-semibold text-foreground">Train Tracker</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">Real-time crossing status</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            {/* Status Indicators - Mobile: Horizontal scroll if needed, Desktop: Normal flex */}
+            <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto">
               {/* Connection Status */}
-              <div className="flex items-center gap-2">
-                <ActivityIcon className={`h-4 w-4 ${connectionState === 'Connected' ? "text-green-600" : "text-muted-foreground"}`} />
-                <span className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <ActivityIcon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${connectionState === 'Connected' ? "text-green-600" : "text-muted-foreground"}`} />
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                   {connectionState}
                 </span>
               </div>
 
               {/* Geo-fence Status */}
               {permissionState === 'granted' && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <div className={`h-2 w-2 rounded-full ${
                     geofenceStatus?.isValid ? 'bg-green-500' : 'bg-orange-500'
                   }`} />
-                  <MapPinIcon className={`h-4 w-4 ${
+                  <MapPinIcon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${
                     geofenceStatus?.isValid ? 'text-green-600' : 'text-orange-500'
                   }`} />
-                  <span className={`text-sm font-medium ${
+                  <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
                     geofenceStatus?.isValid ? 'text-green-700 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
                   }`}>
                     {geofenceStatus?.isValid ? 'In Range' : 'Out of Range'}
@@ -215,10 +218,10 @@ export function TrainTracker() {
 
               {/* Location Permission Status */}
               {permissionState !== 'granted' && permissionState !== 'unsupported' && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                  <MapPinIcon className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                  <MapPinIcon className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-yellow-600" />
+                  <span className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400 whitespace-nowrap">
                     Location Needed
                   </span>
                 </div>
