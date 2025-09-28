@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { pusherServer, PUSHER_CONFIG } from '@/lib/pusher-server'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {

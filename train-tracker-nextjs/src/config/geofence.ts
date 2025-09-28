@@ -59,8 +59,11 @@ export const GEOFENCE_CONFIG = {
   // Minimum GPS accuracy required (in meters)
   minAccuracyMeters: 100,
 
-  // Whether to enforce geo-fence (set to false to disable during testing)
-  enforceGeofence: true,  // Re-enabled for testing
+  // Whether to enforce geo-fence
+  // Can be toggled via NEXT_PUBLIC_ENFORCE_GEOFENCE environment variable
+  // Set to 'false' in .env.local to disable location requirements for testing
+  // Set to 'true' or remove the variable to enable location enforcement in production
+  enforceGeofence: process.env.NEXT_PUBLIC_ENFORCE_GEOFENCE !== 'false',
 
   // Show debug information in console
   debug: process.env.NODE_ENV === 'development'

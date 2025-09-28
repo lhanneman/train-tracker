@@ -121,6 +121,11 @@ Create `.env.local` file:
 # For Ably:
 - [ ] Add ABLY_API_KEY="your-ably-api-key"
 - [ ] Add NEXT_PUBLIC_ABLY_KEY="your-ably-api-key"
+
+# Geofence Configuration (for testing):
+- [x] Add NEXT_PUBLIC_ENFORCE_GEOFENCE="false" ✅ *Disabled for testing*
+# Set to "false" to disable location requirements during testing
+# Set to "true" or remove this line to enforce location requirements in production
 ```
 
 ### 9. API Routes Setup
@@ -406,9 +411,58 @@ function calculateTrainStatus(reports: TrainReport[]): boolean | null {
 }
 ```
 
+## Security & Bot Protection
+
+### 20. Bot Protection Setup
+To prevent abuse and ensure only legitimate users can access the app:
+
+**Search Engine Prevention:**
+```bash
+- [x] Create robots.txt in public/ directory ✅ *Blocks all search engines*
+- [x] Disallow all crawlers and bots ✅ *Prevents indexing on Google, Bing, etc.*
+```
+
+**Human Verification Options (choose one):**
+
+**Option A: Cloudflare Protection (Recommended for Vercel)**
+```bash
+- [ ] Add your domain to Cloudflare (free tier)
+- [ ] Enable "Bot Fight Mode" in Cloudflare Security settings
+- [ ] Enable "Challenge Passage" for suspicious traffic
+- [ ] Configure Security Level to "Medium" or "High"
+- [ ] Enable "Browser Integrity Check"
+```
+
+**Option B: Google reCAPTCHA v3**
+```bash
+- [ ] Sign up at https://www.google.com/recaptcha/admin
+- [ ] Get site key and secret key
+- [ ] Install: npm install react-google-recaptcha-v3
+- [ ] Add NEXT_PUBLIC_RECAPTCHA_SITE_KEY to .env.local
+- [ ] Add RECAPTCHA_SECRET_KEY to .env.local
+- [ ] Wrap app with GoogleReCaptchaProvider
+- [ ] Verify token on API endpoints before accepting reports
+```
+
+**Option C: Vercel Edge Middleware Protection**
+```bash
+- [ ] Create middleware.ts in root directory
+- [ ] Implement rate limiting per IP
+- [ ] Add suspicious user-agent blocking
+- [ ] Configure geo-blocking if needed
+```
+
+**Additional Security Measures:**
+```bash
+- [ ] Set Vercel deployment to "Private" or "Password Protected"
+- [ ] Implement rate limiting on /api/train-reports endpoint
+- [ ] Add CORS headers to restrict API access
+- [ ] Monitor Vercel Analytics for suspicious traffic patterns
+```
+
 ## Deployment
 
-### 20. Vercel Deployment Setup
+### 21. Vercel Deployment Setup
 ```bash
 - [x] Install Vercel CLI: `npm i -g vercel` ✅ *Installed globally*
 - [x] Login to Vercel: `vercel login` ✅ *Authenticated with Vercel account*
@@ -419,7 +473,7 @@ function calculateTrainStatus(reports: TrainReport[]): boolean | null {
 - [x] Add Prisma postinstall script to package.json ✅ *"postinstall": "prisma generate"*
 ```
 
-### 21. Environment Variables for Production
+### 22. Environment Variables for Production
 Add these to Vercel dashboard:
 ```bash
 - [x] DATABASE_URL (Supabase production URL) ✅ *PostgreSQL connection string*
