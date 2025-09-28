@@ -9,7 +9,7 @@ import type { TrainReport } from '@/types';
 import type { LocationData } from '@/hooks/useLocationPermission';
 import { useLocationPermission } from '@/hooks/useLocationPermission';
 import { pusherClient, PUSHER_CONFIG } from '@/lib/pusher-client';
-import { validateGeofence, getContainingZones, getNearestZone } from '@/lib/geofence-utils';
+import { validateGeofence } from '@/lib/geofence-utils';
 
 export function TrainTracker() {
   const [latestReport, setLatestReport] = useState<TrainReport | null>(null);
@@ -22,14 +22,14 @@ export function TrainTracker() {
   // Expose test functions to browser console for debugging
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).testGeofence = (lat: number, lng: number, accuracy = 50) => {
+      (window as unknown as { testGeofence: (lat: number, lng: number, accuracy?: number) => unknown }).testGeofence = (lat: number, lng: number, accuracy = 50) => {
         const result = validateGeofence(lat, lng, accuracy);
         console.log(`Testing coordinates: ${lat}, ${lng}`);
         console.log('Result:', result);
         return result;
       };
 
-      (window as any).debugGeofence = () => {
+      (window as unknown as { debugGeofence: () => void }).debugGeofence = () => {
         console.log('=== Geo-fence Debug Info ===');
         console.log('Permission state:', permissionState);
         console.log('Location data:', locationData);
@@ -38,14 +38,14 @@ export function TrainTracker() {
         console.log('Test coordinates for train tracks center: testGeofence(40.9181, -96.5314)');
       };
 
-      (window as any).getMyLocation = async () => {
+      (window as unknown as { getMyLocation: () => Promise<unknown> }).getMyLocation = async () => {
         console.log('🌍 Getting your current location...');
         const location = await getCurrentLocation();
         console.log('Your location:', location);
         return location;
       };
 
-      (window as any).forceLocation = () => {
+      (window as unknown as { forceLocation: () => void }).forceLocation = () => {
         console.log('🔧 Forcing location with high accuracy...');
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -78,7 +78,7 @@ export function TrainTracker() {
       console.log('- getMyLocation() - Manually get your GPS location');
       console.log('- forceLocation() - Force GPS with high accuracy');
     }
-  }, [permissionState, geofenceStatus]);
+  }, [permissionState, geofenceStatus, getCurrentLocation, locationData]);
 
   // Load initial data
   const loadData = async () => {

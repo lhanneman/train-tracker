@@ -188,49 +188,60 @@ User Reports → Next.js API → Database → Pusher → All Connected Clients
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Vercel (Recommended) ✅ DEPLOYED
+
+**Live Production URL**: [Train Tracker on Vercel](https://train-tracker-deuo2l27f-lloyds-projects-3f72275e.vercel.app)
 
 ```bash
 # Install Vercel CLI
 npm i -g vercel
 
-# Login and deploy
+# Login and deploy (run from train-tracker-nextjs/ directory)
 vercel login
-vercel
-
-# Deploy to production
+vercel link
 vercel --prod
 ```
 
-Add environment variables in Vercel dashboard.
+**Important Setup Steps:**
+1. Set Framework Preset to "Next.js" in Vercel dashboard (not "Other")
+2. Add `"postinstall": "prisma generate"` to package.json scripts
+3. Add all environment variables in Vercel dashboard
+4. Deploy from the `train-tracker-nextjs/` directory
 
-### Environment Variables for Production
+### Environment Variables for Production ✅ CONFIGURED
 
 - `DATABASE_URL`: Supabase production connection string
-- `NEXTAUTH_SECRET`: Authentication secret
-- `NEXTAUTH_URL`: Your production domain
-- `PUSHER_*`: All Pusher credentials
+- `NEXTAUTH_SECRET`: Authentication secret (generate with `openssl rand -base64 32`)
+- `NEXTAUTH_URL`: Your Vercel deployment URL
+- `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`: Pusher credentials
+- `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER`: Public Pusher variables
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-1. **Database Connection Errors**
+1. **Vercel Deployment 404 Errors**
+   - ✅ **SOLVED**: Set Framework Preset to "Next.js" (not "Other") in Vercel dashboard
+   - Add `"postinstall": "prisma generate"` to package.json scripts
+   - Deploy from `train-tracker-nextjs/` directory, not root
+   - Use `vercel --prod --force` to override cached settings
+
+2. **Database Connection Errors**
    - Check Supabase connection string
    - Ensure URL encoding for special characters in password
    - Verify network access to Supabase
 
-2. **Real-time Not Working**
+3. **Real-time Not Working**
    - Check Pusher credentials in `.env.local`
    - Verify Pusher app is active
    - Check browser console for connection errors
 
-3. **Build Errors**
-   - Check TypeScript errors: `npm run type-check`
+4. **Build Errors**
+   - Fix TypeScript errors (no `any` types, proper imports)
    - Verify all environment variables are set
    - Check for missing dependencies
 
-4. **Prisma Issues**
+5. **Prisma Issues**
    - Regenerate client: `npx prisma generate`
    - Check schema syntax in `prisma/schema.prisma`
    - Verify database schema matches Prisma schema

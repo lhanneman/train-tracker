@@ -410,32 +410,54 @@ function calculateTrainStatus(reports: TrainReport[]): boolean | null {
 
 ### 20. Vercel Deployment Setup
 ```bash
-- [ ] Install Vercel CLI: `npm i -g vercel`
-- [ ] Login to Vercel: `vercel login`
-- [ ] Link project: `vercel link`
-- [ ] Set environment variables in Vercel dashboard
-- [ ] Deploy: `vercel --prod`
+- [x] Install Vercel CLI: `npm i -g vercel` ✅ *Installed globally*
+- [x] Login to Vercel: `vercel login` ✅ *Authenticated with Vercel account*
+- [x] Link project: `vercel link` ✅ *Project linked from train-tracker-nextjs directory*
+- [x] Set environment variables in Vercel dashboard ✅ *All environment variables configured*
+- [x] Deploy: `vercel --prod` ✅ *Successfully deployed*
+- [x] Fix framework preset: Set to "Next.js" in Vercel dashboard ✅ *Critical fix for routing*
+- [x] Add Prisma postinstall script to package.json ✅ *"postinstall": "prisma generate"*
 ```
 
 ### 21. Environment Variables for Production
 Add these to Vercel dashboard:
 ```bash
-- [ ] DATABASE_URL (Supabase production URL)
-- [ ] NEXTAUTH_SECRET (same as local)
-- [ ] NEXTAUTH_URL (your-domain.vercel.app)
-- [ ] PUSHER_* or ABLY_* variables (same as local)
+- [x] DATABASE_URL (Supabase production URL) ✅ *PostgreSQL connection string*
+- [x] NEXTAUTH_SECRET (generate with: openssl rand -base64 32) ✅ *Secure random key generated*
+- [x] NEXTAUTH_URL (your Vercel deployment URL) ✅ *https://train-tracker-[hash].vercel.app*
+- [x] PUSHER_APP_ID="2056315" ✅ *Pusher app ID*
+- [x] PUSHER_KEY ✅ *Pusher key*
+- [x] PUSHER_SECRET ✅ *Pusher secret*
+- [x] PUSHER_CLUSTER="us2" ✅ *Pusher cluster*
+- [x] NEXT_PUBLIC_PUSHER_KEY ✅ *Public Pusher key*
+- [x] NEXT_PUBLIC_PUSHER_CLUSTER="us2" ✅ *Public Pusher cluster*
 ```
 
 ### 22. Database Migration to Production
 ```bash
-- [ ] Update Supabase project for production
-- [ ] Run: `npx prisma db push` (with production DATABASE_URL)
-- [ ] Verify tables created in Supabase dashboard
+- [x] Update Supabase project for production ✅ *Using same Supabase database for dev/prod*
+- [x] Run: `npx prisma db push` (with production DATABASE_URL) ✅ *Schema already synced*
+- [x] Verify tables created in Supabase dashboard ✅ *TrainReports table exists and working*
 ```
+
+### 23. Deployment Troubleshooting (Completed Issues)
+```bash
+- [x] Fixed Framework Preset: Changed from "Other" to "Next.js" in Vercel dashboard ✅ *Critical for Next.js routing*
+- [x] Added Prisma postinstall script: "postinstall": "prisma generate" ✅ *Required for Vercel builds*
+- [x] Fixed TypeScript errors: Removed 'any' types and unused imports ✅ *Build now passes*
+- [x] Deployed from correct directory: train-tracker-nextjs/ ✅ *Proper project structure*
+- [x] Environment variables configured correctly ✅ *All production variables set*
+```
+
+**Common Deployment Issues and Solutions:**
+- **404 Not Found on all routes**: Check Framework Preset is set to "Next.js" not "Other"
+- **Build fails with Prisma errors**: Add `"postinstall": "prisma generate"` to package.json scripts
+- **TypeScript build errors**: Fix any `any` types and missing dependencies in useEffect
+- **API routes not working**: Ensure deploying from correct directory with proper Next.js structure
 
 ## Migration from Current Stack
 
-### 23. Data Migration (Optional)
+### 24. Data Migration (Optional)
 If you want to keep existing data:
 ```bash
 - [x] Export current PostgreSQL data: `pg_dump train_tracker > backup.sql` ✅ *Not needed - fresh start*
@@ -443,7 +465,7 @@ If you want to keep existing data:
 - [x] Verify data integrity with Prisma Studio ✅ *Schema verified*
 ```
 
-### 24. Clean Up Old Stack (After Migration)
+### 25. Clean Up Old Stack (After Migration)
 ```bash
 - [x] Archive or remove ASP.NET Core backend ✅ *Removed src/ directory*
 - [x] Archive or remove old React Vite frontend ✅ *Removed train-tracker-web/ directory*

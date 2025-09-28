@@ -69,8 +69,8 @@ export function runGeofenceTests() {
 
 // Browser console helper
 if (typeof window !== 'undefined') {
-  (window as any).testGeofence = testGeofenceCoordinates;
-  (window as any).runGeofenceTests = runGeofenceTests;
+  (window as unknown as { testGeofence: typeof testGeofenceCoordinates }).testGeofence = testGeofenceCoordinates;
+  (window as unknown as { runGeofenceTests: typeof runGeofenceTests }).runGeofenceTests = runGeofenceTests;
   console.log('Geo-fence test functions loaded:');
   console.log('- testGeofence(lat, lng, accuracy?)');
   console.log('- runGeofenceTests()');

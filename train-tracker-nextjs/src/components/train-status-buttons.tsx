@@ -78,7 +78,7 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
     setIsReporting(false)
   }
 
-  const isOutsideGeofence = geofenceStatus && !geofenceStatus.isValid
+  const isOutsideGeofence = geofenceStatus ? !geofenceStatus.isValid : false
   const isDisabled = isReporting || cooldownSeconds > 0 || isLocationLoading ||
                      permissionState === 'unsupported' || isOutsideGeofence
   const isReadOnly = permissionState === 'denied' || permissionState === 'unsupported' || isOutsideGeofence
