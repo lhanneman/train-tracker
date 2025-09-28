@@ -4,14 +4,81 @@ import { useEffect, useState } from 'react';
 import { TrainStatusButtons } from './train-status-buttons';
 import { RecentReports } from './recent-reports';
 import { StatusIndicator } from './status-indicator';
-import { TrainIcon, ActivityIcon } from 'lucide-react';
+import { TrainIcon, ActivityIcon, MapPinIcon } from 'lucide-react';
 import type { TrainReport } from '@/types';
-import { pusherClient, PUSHER_CONFIG } from '@/lib/pusher';
+import type { LocationData } from '@/hooks/useLocationPermission';
+import { useLocationPermission } from '@/hooks/useLocationPermission';
+import { pusherClient, PUSHER_CONFIG } from '@/lib/pusher-client';
+import { validateGeofence, getContainingZones, getNearestZone } from '@/lib/geofence-utils';
 
 export function TrainTracker() {
   const [latestReport, setLatestReport] = useState<TrainReport | null>(null);
   const [recentReports, setRecentReports] = useState<TrainReport[]>([]);
   const [connectionState, setConnectionState] = useState<'Connected' | 'Disconnected'>('Disconnected');
+
+  // Location permission and geo-fence status
+  const { permissionState, geofenceStatus, getCurrentLocation, locationData } = useLocationPermission();
+
+  // Expose test functions to browser console for debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).testGeofence = (lat: number, lng: number, accuracy = 50) => {
+        const result = validateGeofence(lat, lng, accuracy);
+        console.log(`Testing coordinates: ${lat}, ${lng}`);
+        console.log('Result:', result);
+        return result;
+      };
+
+      (window as any).debugGeofence = () => {
+        console.log('=== Geo-fence Debug Info ===');
+        console.log('Permission state:', permissionState);
+        console.log('Location data:', locationData);
+        console.log('Geofence status:', geofenceStatus);
+        console.log('Test coordinates for your house center: testGeofence(40.9241, -96.5267)');
+        console.log('Test coordinates for train tracks center: testGeofence(40.9181, -96.5314)');
+      };
+
+      (window as any).getMyLocation = async () => {
+        console.log('🌍 Getting your current location...');
+        const location = await getCurrentLocation();
+        console.log('Your location:', location);
+        return location;
+      };
+
+      (window as any).forceLocation = () => {
+        console.log('🔧 Forcing location with high accuracy...');
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('✅ Success! Your coordinates:');
+              console.log(`Latitude: ${position.coords.latitude}`);
+              console.log(`Longitude: ${position.coords.longitude}`);
+              console.log(`Accuracy: ${position.coords.accuracy}m`);
+
+              // Also test geo-fence with these coordinates
+              const result = validateGeofence(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
+              console.log('🎯 Geo-fence test result:', result);
+            },
+            (error) => {
+              console.error('❌ Location error:', error.message);
+              console.log('Try enabling location services or going outside for better GPS signal');
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 0
+            }
+          );
+        }
+      };
+
+      console.log('🔧 Geo-fence test functions loaded:');
+      console.log('- testGeofence(lat, lng) - Test specific coordinates');
+      console.log('- debugGeofence() - Show current status');
+      console.log('- getMyLocation() - Manually get your GPS location');
+      console.log('- forceLocation() - Force GPS with high accuracy');
+    }
+  }, [permissionState, geofenceStatus]);
 
   // Load initial data
   const loadData = async () => {
@@ -40,15 +107,22 @@ export function TrainTracker() {
     }
   };
 
-  // Handle new report submission
-  const handleReportSubmitted = async (isTrainCrossing: boolean) => {
+  // Handle new report submission with location data
+  const handleReportSubmitted = async (isTrainCrossing: boolean, location?: LocationData) => {
     try {
       const response = await fetch('/api/train-reports', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ isTrainCrossing }),
+        body: JSON.stringify({
+          isTrainCrossing,
+          location: location ? {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy
+          } : undefined
+        }),
       });
 
       if (!response.ok) {
@@ -113,11 +187,42 @@ export function TrainTracker() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <ActivityIcon className={`h-4 w-4 ${connectionState === 'Connected' ? "text-green-600" : "text-muted-foreground"}`} />
-              <span className="text-sm text-muted-foreground">
-                {connectionState}
-              </span>
+            <div className="flex items-center gap-6">
+              {/* Connection Status */}
+              <div className="flex items-center gap-2">
+                <ActivityIcon className={`h-4 w-4 ${connectionState === 'Connected' ? "text-green-600" : "text-muted-foreground"}`} />
+                <span className="text-sm text-muted-foreground">
+                  {connectionState}
+                </span>
+              </div>
+
+              {/* Geo-fence Status */}
+              {permissionState === 'granted' && (
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${
+                    geofenceStatus?.isValid ? 'bg-green-500' : 'bg-orange-500'
+                  }`} />
+                  <MapPinIcon className={`h-4 w-4 ${
+                    geofenceStatus?.isValid ? 'text-green-600' : 'text-orange-500'
+                  }`} />
+                  <span className={`text-sm font-medium ${
+                    geofenceStatus?.isValid ? 'text-green-700 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                  }`}>
+                    {geofenceStatus?.isValid ? 'In Range' : 'Out of Range'}
+                  </span>
+                </div>
+              )}
+
+              {/* Location Permission Status */}
+              {permissionState !== 'granted' && permissionState !== 'unsupported' && (
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
+                  <MapPinIcon className="h-4 w-4 text-yellow-600" />
+                  <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                    Location Needed
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

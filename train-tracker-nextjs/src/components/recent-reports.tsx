@@ -37,7 +37,7 @@ export function RecentReports({ reports }: RecentReportsProps) {
           </div>
         ) : (
           reports.map((report, index) => (
-            <div key={report.id} className={`p-4 rounded-lg border bg-card/50 ${index === 0 ? "slide-in" : ""}`}>
+            <div key={`${report.id}-${index}`} className={`p-4 rounded-lg border bg-card/50 ${index === 0 ? "slide-in" : ""}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   {report.isTrainCrossing ? (

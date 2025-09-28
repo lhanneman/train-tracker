@@ -211,8 +211,93 @@ Important features to implement for production:
 3. **Database triggers**: PostgreSQL functions to auto-update expired statuses
 4. **Hybrid approach**: Client countdown + server-side validation
 
-### 16. Enhanced Schema for Production
-Consider extending the Prisma schema:
+### 16. Location Permission & Geo-fencing
+
+#### Location Permission Handling
+```bash
+- [ ] Implement browser Geolocation API permission request
+- [ ] Show read-only UI if location permission denied
+- [ ] Enable "Train is Crossing" and "All Clear" buttons only with location access
+- [ ] Store permission status in local storage for persistence
+- [ ] Show clear messaging about why location is needed
+```
+
+**Implementation Requirements:**
+- Request location permission only when user first attempts to report
+- Gracefully handle permission denial - keep app functional in read-only mode
+- Show status indicator for location permission state
+- Provide option to re-request permission if initially denied
+
+**Example Permission Flow:**
+```typescript
+async function requestLocationPermission(): Promise<boolean> {
+  try {
+    // Request permission when user clicks report button
+    const result = await navigator.permissions.query({ name: 'geolocation' });
+
+    if (result.state === 'granted') {
+      return true;
+    } else if (result.state === 'prompt') {
+      // Will trigger browser permission dialog
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          () => resolve(true),
+          () => resolve(false)
+        );
+      });
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+```
+
+#### Geo-fencing for Report Validation
+```bash
+- [ ] Define train track coordinates/polygon boundaries
+- [ ] Calculate user distance from nearest track point
+- [ ] Set maximum reporting distance (e.g., 500 meters)
+- [ ] Validate location before accepting reports
+- [ ] Show distance feedback to user
+```
+
+**Geo-fence Configuration:**
+```typescript
+interface TrackLocation {
+  lat: number;
+  lng: number;
+}
+
+interface GeoFenceConfig {
+  trackPoints: TrackLocation[]; // Line of track coordinates
+  maxDistanceMeters: number;    // Max distance to submit report (e.g., 500m)
+  minAccuracyMeters: number;    // Required GPS accuracy (e.g., 50m)
+}
+
+// Calculate if user is within geo-fence
+function isWithinGeoFence(
+  userLocation: GeolocationPosition,
+  config: GeoFenceConfig
+): boolean {
+  const minDistance = calculateMinDistanceToTrack(
+    userLocation.coords,
+    config.trackPoints
+  );
+
+  return minDistance <= config.maxDistanceMeters &&
+         userLocation.coords.accuracy <= config.minAccuracyMeters;
+}
+```
+
+**User Experience Considerations:**
+- Show visual indicator of distance from tracks
+- Display "Too far from tracks" message when outside geo-fence
+- Consider caching last valid location for brief GPS dropouts
+- Allow viewing reports without location (read-only mode)
+
+### 17. Enhanced Schema for Production
+Consider extending the Prisma schema to include location data:
 
 ```prisma
 model TrainReport {
@@ -227,10 +312,17 @@ model TrainReport {
   isExpired      Boolean  @default(false)
   flaggedAt      DateTime? // For suspicious reports
 
+  // Location data for geo-fencing
+  latitude       Float?   // User's latitude when reporting
+  longitude      Float?   // User's longitude when reporting
+  accuracy       Float?   // GPS accuracy in meters
+  distanceToTrack Float?  // Calculated distance to nearest track point
+
   @@map("TrainReports")
   @@index([reportedAt])
   @@index([expiresAt])
   @@index([isExpired, reportedAt])
+  @@index([latitude, longitude])
 }
 
 model UserSession {
@@ -243,9 +335,21 @@ model UserSession {
 
   @@map("UserSessions")
 }
+
+model TrackSegment {
+  id        Int      @id @default(autoincrement())
+  name      String   // e.g., "Main St Crossing"
+  latitude  Float
+  longitude Float
+  order     Int      // For connecting track points in sequence
+  isActive  Boolean  @default(true)
+
+  @@map("TrackSegments")
+  @@index([latitude, longitude])
+}
 ```
 
-### 17. Status Determination Logic
+### 18. Status Determination Logic
 ```bash
 - [ ] Implement smart status calculation in /api/train-status
 - [ ] Consider only non-expired reports from last 10 minutes
@@ -282,7 +386,7 @@ function calculateTrainStatus(reports: TrainReport[]): boolean | null {
 }
 ```
 
-### 18. Auto-Expiration Implementation
+### 19. Auto-Expiration Implementation
 ```bash
 - [ ] Create /api/expire-crossings API route
 - [ ] Set up Vercel Cron Job to run every minute
@@ -304,7 +408,7 @@ function calculateTrainStatus(reports: TrainReport[]): boolean | null {
 
 ## Deployment
 
-### 19. Vercel Deployment Setup
+### 20. Vercel Deployment Setup
 ```bash
 - [ ] Install Vercel CLI: `npm i -g vercel`
 - [ ] Login to Vercel: `vercel login`
@@ -313,7 +417,7 @@ function calculateTrainStatus(reports: TrainReport[]): boolean | null {
 - [ ] Deploy: `vercel --prod`
 ```
 
-### 16. Environment Variables for Production
+### 21. Environment Variables for Production
 Add these to Vercel dashboard:
 ```bash
 - [ ] DATABASE_URL (Supabase production URL)
@@ -322,7 +426,7 @@ Add these to Vercel dashboard:
 - [ ] PUSHER_* or ABLY_* variables (same as local)
 ```
 
-### 17. Database Migration to Production
+### 22. Database Migration to Production
 ```bash
 - [ ] Update Supabase project for production
 - [ ] Run: `npx prisma db push` (with production DATABASE_URL)
@@ -331,7 +435,7 @@ Add these to Vercel dashboard:
 
 ## Migration from Current Stack
 
-### 18. Data Migration (Optional)
+### 23. Data Migration (Optional)
 If you want to keep existing data:
 ```bash
 - [x] Export current PostgreSQL data: `pg_dump train_tracker > backup.sql` ✅ *Not needed - fresh start*
@@ -339,7 +443,7 @@ If you want to keep existing data:
 - [x] Verify data integrity with Prisma Studio ✅ *Schema verified*
 ```
 
-### 19. Clean Up Old Stack (After Migration)
+### 24. Clean Up Old Stack (After Migration)
 ```bash
 - [x] Archive or remove ASP.NET Core backend ✅ *Removed src/ directory*
 - [x] Archive or remove old React Vite frontend ✅ *Removed train-tracker-web/ directory*

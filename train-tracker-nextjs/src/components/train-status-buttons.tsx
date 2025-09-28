@@ -3,15 +3,26 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { TrainIcon, CheckCircleIcon } from "lucide-react"
+import { TrainIcon, CheckCircleIcon, MapPinIcon, AlertCircleIcon } from "lucide-react"
+import { useLocationPermission, LocationData } from "@/hooks/useLocationPermission"
 
 interface TrainStatusButtonsProps {
-  onStatusReport: (isTrainCrossing: boolean) => void
+  onStatusReport: (isTrainCrossing: boolean, location?: LocationData) => void
 }
 
 export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) {
   const [isReporting, setIsReporting] = useState(false)
   const [cooldownSeconds, setCooldownSeconds] = useState(0)
+  const [showPermissionPrompt, setShowPermissionPrompt] = useState(false)
+
+  const {
+    permissionState,
+    geofenceStatus,
+    isLoading: isLocationLoading,
+    error: locationError,
+    requestPermission,
+    getCurrentLocation
+  } = useLocationPermission()
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null
@@ -33,10 +44,32 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
   }, [cooldownSeconds])
 
   const handleReport = async (isTrainCrossing: boolean) => {
+    // Check if we need to request permission first
+    if (permissionState === 'prompt' || permissionState === 'denied') {
+      setShowPermissionPrompt(true)
+      const granted = await requestPermission()
+      setShowPermissionPrompt(false)
+
+      if (!granted) {
+        // Permission denied, don't proceed with report
+        return
+      }
+    }
+
     setIsReporting(true)
 
     try {
-      await onStatusReport(isTrainCrossing)
+      // Get current location before reporting
+      const location = await getCurrentLocation()
+
+      // Check if location is within geo-fence
+      if (location && geofenceStatus && !geofenceStatus.isValid) {
+        // Location is outside geo-fence, don't submit
+        console.warn('Report blocked: Outside geo-fence', geofenceStatus.reason)
+        return
+      }
+
+      await onStatusReport(isTrainCrossing, location || undefined)
       setCooldownSeconds(60) // 1 minute cooldown
     } catch (error) {
       console.error('Failed to submit report:', error)
@@ -45,22 +78,70 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
     setIsReporting(false)
   }
 
-  const isDisabled = isReporting || cooldownSeconds > 0
+  const isOutsideGeofence = geofenceStatus && !geofenceStatus.isValid
+  const isDisabled = isReporting || cooldownSeconds > 0 || isLocationLoading ||
+                     permissionState === 'unsupported' || isOutsideGeofence
+  const isReadOnly = permissionState === 'denied' || permissionState === 'unsupported' || isOutsideGeofence
 
   return (
     <Card className="p-6">
       <div className="text-center mb-6">
         <h3 className="text-lg font-semibold text-foreground mb-2">Report Train Status</h3>
-        <p className="text-muted-foreground">Help keep the community informed about train crossings</p>
+        <p className="text-muted-foreground">
+          {isReadOnly
+            ? "View-only mode - Location access required to submit reports"
+            : "Help keep the community informed about train crossings"}
+        </p>
       </div>
+
+      {/* Location Permission Status Indicator */}
+      {permissionState !== 'granted' && (
+        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertCircleIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+                {permissionState === 'denied' && "Location access denied"}
+                {permissionState === 'prompt' && "Location access required"}
+                {permissionState === 'unsupported' && "Location not supported"}
+              </p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                {permissionState === 'denied' && "Enable location access in your browser settings to submit reports"}
+                {permissionState === 'prompt' && "We need your location to verify you're near the tracks"}
+                {permissionState === 'unsupported' && "Your browser doesn't support location services"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed Geo-fence Status (only when out of range for helpful info) */}
+      {permissionState === 'granted' && geofenceStatus && !geofenceStatus.isValid && (
+        <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+          <div className="flex items-start gap-2">
+            <MapPinIcon className="h-5 w-5 mt-0.5 text-orange-600 dark:text-orange-500" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                {geofenceStatus.reason}
+              </p>
+              {geofenceStatus.nearestZone && (
+                <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                  Nearest zone: {geofenceStatus.nearestZone.zone.name}
+                  ({Math.round(geofenceStatus.nearestZone.distance)}m away)
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Button
           size="lg"
-          variant="destructive"
+          variant={isReadOnly ? "outline" : "destructive"}
           className="h-20 text-lg font-semibold"
           onClick={() => handleReport(true)}
-          disabled={isDisabled}
+          disabled={isDisabled || isReadOnly}
         >
           <TrainIcon className="h-6 w-6 mr-3" />
           Train Crossing
@@ -68,18 +149,29 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
 
         <Button
           size="lg"
-          className="h-20 text-lg font-semibold bg-green-600 hover:bg-green-700 text-white"
+          variant={isReadOnly ? "outline" : "default"}
+          className={`h-20 text-lg font-semibold ${
+            !isReadOnly ? "bg-green-600 hover:bg-green-700 text-white" : ""
+          }`}
           onClick={() => handleReport(false)}
-          disabled={isDisabled}
+          disabled={isDisabled || isReadOnly}
         >
           <CheckCircleIcon className="h-6 w-6 mr-3" />
           Tracks Clear
         </Button>
       </div>
 
-      {isReporting && (
+      {showPermissionPrompt && (
         <div className="mt-4 text-center">
-          <p className="text-sm text-muted-foreground">Submitting report...</p>
+          <p className="text-sm text-muted-foreground">Requesting location permission...</p>
+        </div>
+      )}
+
+      {isReporting && !showPermissionPrompt && (
+        <div className="mt-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            {isLocationLoading ? "Getting your location..." : "Submitting report..."}
+          </p>
         </div>
       )}
 
@@ -89,6 +181,12 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
             You can send another report in {Math.floor(cooldownSeconds / 60)}:
             {(cooldownSeconds % 60).toString().padStart(2, "0")}
           </p>
+        </div>
+      )}
+
+      {locationError && (
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-sm text-red-900 dark:text-red-100">{locationError}</p>
         </div>
       )}
     </Card>
