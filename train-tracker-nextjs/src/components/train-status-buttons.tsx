@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { TrainIcon, CheckCircleIcon, MapPinIcon, AlertCircleIcon } from "lucide-react"
 import { useLocationPermission, LocationData } from "@/hooks/useLocationPermission"
+import { GEOFENCE_CONFIG } from "@/config/geofence"
 
 interface TrainStatusButtonsProps {
   onStatusReport: (isTrainCrossing: boolean, location?: LocationData) => void
@@ -13,7 +14,6 @@ interface TrainStatusButtonsProps {
 export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) {
   const [isReporting, setIsReporting] = useState(false)
   const [cooldownSeconds, setCooldownSeconds] = useState(0)
-  const [showPermissionPrompt, setShowPermissionPrompt] = useState(false)
 
   const {
     permissionState,
@@ -44,16 +44,9 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
   }, [cooldownSeconds])
 
   const handleReport = async (isTrainCrossing: boolean) => {
-    // Check if we need to request permission first
-    if (permissionState === 'prompt' || permissionState === 'denied') {
-      setShowPermissionPrompt(true)
-      const granted = await requestPermission()
-      setShowPermissionPrompt(false)
-
-      if (!granted) {
-        // Permission denied, don't proceed with report
-        return
-      }
+    // If permission is denied, don't proceed
+    if (permissionState === 'denied') {
+      return
     }
 
     setIsReporting(true)
@@ -62,8 +55,8 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
       // Get current location before reporting
       const location = await getCurrentLocation()
 
-      // Check if location is within geo-fence
-      if (location && geofenceStatus && !geofenceStatus.isValid) {
+      // Check if location is within geo-fence (only if enforcement is enabled)
+      if (GEOFENCE_CONFIG.enforceGeofence && location && geofenceStatus && !geofenceStatus.isValid) {
         // Location is outside geo-fence, don't submit
         console.warn('Report blocked: Outside geo-fence', geofenceStatus.reason)
         return
@@ -78,7 +71,8 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
     setIsReporting(false)
   }
 
-  const isOutsideGeofence = geofenceStatus ? !geofenceStatus.isValid : false
+  // Only consider geofence status if enforcement is enabled
+  const isOutsideGeofence = GEOFENCE_CONFIG.enforceGeofence && geofenceStatus ? !geofenceStatus.isValid : false
   const isDisabled = isReporting || cooldownSeconds > 0 || isLocationLoading ||
                      permissionState === 'unsupported' || isOutsideGeofence
   const isReadOnly = permissionState === 'denied' || permissionState === 'unsupported' || isOutsideGeofence
@@ -95,20 +89,59 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
       </div>
 
       {/* Location Permission Status Indicator */}
-      {permissionState !== 'granted' && (
+      {permissionState === 'denied' && (
         <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
           <div className="flex items-start gap-2">
             <AlertCircleIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-                {permissionState === 'denied' && "Location access denied"}
-                {permissionState === 'prompt' && "Location access required"}
-                {permissionState === 'unsupported' && "Location not supported"}
+                Location access denied
               </p>
               <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                {permissionState === 'denied' && "Enable location access in your browser settings to submit reports"}
-                {permissionState === 'prompt' && "We need your location to verify you're near the tracks"}
-                {permissionState === 'unsupported' && "Your browser doesn't support location services"}
+                Enable location access in your browser settings to submit reports
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2"
+                onClick={async () => {
+                  await requestPermission()
+                }}
+                disabled={isLocationLoading}
+              >
+                {isLocationLoading ? "Requesting..." : "Try Again"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {permissionState === 'prompt' && isLocationLoading && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-start gap-2">
+            <MapPinIcon className="h-5 w-5 text-blue-600 dark:text-blue-500 mt-0.5 animate-pulse" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Requesting location access...
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Please allow location access to submit train reports
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {permissionState === 'unsupported' && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertCircleIcon className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900 dark:text-red-100">
+                Location not supported
+              </p>
+              <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                Your browser doesn&apos;t support location services
               </p>
             </div>
           </div>
@@ -161,13 +194,7 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
         </Button>
       </div>
 
-      {showPermissionPrompt && (
-        <div className="mt-4 text-center">
-          <p className="text-sm text-muted-foreground">Requesting location permission...</p>
-        </div>
-      )}
-
-      {isReporting && !showPermissionPrompt && (
+      {isReporting && (
         <div className="mt-4 text-center">
           <p className="text-sm text-muted-foreground">
             {isLocationLoading ? "Getting your location..." : "Submitting report..."}

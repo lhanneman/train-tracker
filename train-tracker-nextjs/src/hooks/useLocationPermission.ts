@@ -274,6 +274,17 @@ export function useLocationPermission(): UseLocationPermissionReturn {
     }
   }, [getCurrentLocation]);
 
+  // Automatically request permission on mount if it's in 'prompt' state
+  useEffect(() => {
+    if (permissionState === 'prompt' && !isLoading) {
+      // Small delay to ensure the UI is rendered before requesting
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [permissionState, isLoading, requestPermission]);
+
   return {
     permissionState,
     locationData,
