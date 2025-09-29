@@ -35,11 +35,27 @@ const mockChannel = {
   unbind_all: () => {},
 }
 
+// Mock presence channel for when Pusher is not available
+const mockPresenceChannel = {
+  bind: () => {},
+  unbind: () => {},
+  unbind_all: () => {},
+  members: { count: 0, each: () => {} },
+}
+
 // Client-side Pusher instance (for React components)
 export const pusherClient = {
   subscribe: (channel: string) => {
     const client = initializePusherClient()
     return client ? client.subscribe(channel) : mockChannel
+  },
+  subscribeToPresenceChannel: (channel: string) => {
+    const client = initializePusherClient()
+    if (!client) return mockPresenceChannel
+
+    // For now, just use regular channel subscription
+    // In the future, this could be extended for true presence functionality
+    return client.subscribe(channel)
   },
   unsubscribe: (channel: string) => {
     const client = initializePusherClient()
@@ -53,6 +69,7 @@ export const pusherClient = {
 // Channel and event names
 export const PUSHER_CONFIG = {
   channel: 'train-reports',
+  presenceChannel: 'presence-train-tracker',
   events: {
     newReport: 'new-report',
   },

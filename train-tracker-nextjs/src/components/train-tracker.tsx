@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { TrainStatusButtons } from './train-status-buttons';
 import { RecentReports } from './recent-reports';
 import { StatusIndicator } from './status-indicator';
-import { TrainIcon, ActivityIcon, MapPinIcon } from 'lucide-react';
+import { TrainIcon, ActivityIcon, MapPinIcon, UsersIcon } from 'lucide-react';
 import type { TrainReport } from '@/types';
 import type { LocationData } from '@/hooks/useLocationPermission';
 import { useLocationPermission } from '@/hooks/useLocationPermission';
+import { useActiveUsers } from '@/hooks/useActiveUsers';
 import { pusherClient, PUSHER_CONFIG } from '@/lib/pusher-client';
 import { validateGeofence } from '@/lib/geofence-utils';
 
@@ -18,6 +19,9 @@ export function TrainTracker() {
 
   // Location permission and geo-fence status
   const { permissionState, geofenceStatus, getCurrentLocation, locationData } = useLocationPermission();
+
+  // Active users tracking
+  const { activeUsers, isConnected: usersConnected } = useActiveUsers();
 
   // Expose test functions to browser console for debugging
   useEffect(() => {
@@ -198,6 +202,16 @@ export function TrainTracker() {
                   {connectionState}
                 </span>
               </div>
+
+              {/* Active Users Count */}
+              {usersConnected && (
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  <UsersIcon className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-blue-600" />
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                    {activeUsers} active
+                  </span>
+                </div>
+              )}
 
               {/* Geo-fence Status */}
               {permissionState === 'granted' && (

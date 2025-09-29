@@ -220,11 +220,11 @@ Important features to implement for production:
 
 #### Location Permission Handling
 ```bash
-- [ ] Implement browser Geolocation API permission request
-- [ ] Show read-only UI if location permission denied
-- [ ] Enable "Train is Crossing" and "All Clear" buttons only with location access
-- [ ] Store permission status in local storage for persistence
-- [ ] Show clear messaging about why location is needed
+- [x] Implement browser Geolocation API permission request
+- [x] Show read-only UI if location permission denied
+- [x] Enable "Train is Crossing" and "All Clear" buttons only with location access
+- [x] Store permission status in local storage for persistence
+- [x] Show clear messaging about why location is needed
 ```
 
 **Implementation Requirements:**
@@ -260,11 +260,11 @@ async function requestLocationPermission(): Promise<boolean> {
 
 #### Geo-fencing for Report Validation
 ```bash
-- [ ] Define train track coordinates/polygon boundaries
-- [ ] Calculate user distance from nearest track point
-- [ ] Set maximum reporting distance (e.g., 500 meters)
-- [ ] Validate location before accepting reports
-- [ ] Show distance feedback to user
+- [x] Define train track coordinates/polygon boundaries
+- [x] Calculate user distance from nearest track point
+- [x] Set maximum reporting distance (e.g., 500 meters)
+- [x] Validate location before accepting reports
+- [x] Show distance feedback to user
 ```
 
 **Geo-fence Configuration:**
