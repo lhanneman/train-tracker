@@ -77,3 +77,12 @@ npm run lint && npm run build
 ```
 
 If both pass, the deployment to Vercel should succeed.
+
+## Deployment
+
+To deploy to production (automatically updates train-tracker-xi.vercel.app):
+```bash
+vercel --prod
+```
+
+The `vercel.json` configuration automatically aliases deployments to the production domain.
