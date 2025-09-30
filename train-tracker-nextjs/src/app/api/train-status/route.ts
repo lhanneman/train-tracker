@@ -1,47 +1,40 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { calculateConsensusStatus, getConsensusExplanation } from '@/lib/consensus-utils'
 
 export async function GET() {
   try {
-    const now = new Date();
+    const now = new Date()
 
-    // Get the latest valid report (not expired)
-    const latestReport = await prisma.trainReport.findFirst({
+    // Get all reports from the last 10 minutes (wider than consensus window for context)
+    const recentReports = await prisma.trainReport.findMany({
       where: {
-        OR: [
-          { isTrainCrossing: false }, // All clear reports are always valid
-          {
-            AND: [
-              { isTrainCrossing: true },
-              {
-                OR: [
-                  { expiresAt: null }, // Old reports without expiration
-                  { expiresAt: { gt: now } } // Not expired yet
-                ]
-              }
-            ]
-          }
-        ]
+        reportedAt: {
+          gte: new Date(now.getTime() - 10 * 60 * 1000) // Last 10 minutes
+        }
       },
       orderBy: { reportedAt: 'desc' }
     })
 
-    if (!latestReport) {
-      return NextResponse.json({
-        data: { status: null }
-      })
-    }
+    // Calculate consensus status
+    const consensus = calculateConsensusStatus(recentReports)
+
+    // Get the most recent report for additional context
+    const latestReport = recentReports[0] || null
 
     return NextResponse.json({
       data: {
-        status: latestReport.isTrainCrossing,
-        lastReport: {
+        status: consensus.status,
+        confidence: consensus.confidence,
+        explanation: getConsensusExplanation(consensus),
+        recentReports: consensus.recentReports,
+        lastReport: latestReport ? {
           id: latestReport.id,
           isTrainCrossing: latestReport.isTrainCrossing,
           reportedAt: latestReport.reportedAt.toISOString(),
           expiresAt: latestReport.expiresAt?.toISOString() || null,
           sessionId: latestReport.sessionId
-        }
+        } : null
       }
     })
   } catch (error) {

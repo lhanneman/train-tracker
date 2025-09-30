@@ -58,7 +58,7 @@ export function StatusIndicator({ status, timeUntilExpiry }: StatusIndicatorProp
           <p className="text-muted-foreground">{config.description}</p>
 
           {/* Countdown Timer for Train Crossing */}
-          {status === true && timeUntilExpiry !== null && timeUntilExpiry > 0 && (
+          {status === true && timeUntilExpiry !== null && timeUntilExpiry !== undefined && timeUntilExpiry > 0 && (
             <div className="mt-3 flex items-center justify-center gap-2 text-sm">
               <ClockIcon className="h-4 w-4 text-orange-600" />
               <span className="text-orange-600 font-medium">

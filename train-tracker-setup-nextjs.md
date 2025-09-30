@@ -204,10 +204,10 @@ Important features to implement for production:
 
 #### Auto-expiration of Train Crossing Status
 ```bash
-- [ ] Add auto-expiration for "train crossing" status after 10 minutes
-- [ ] Create scheduled job or API route to handle expiration
-- [ ] Update UI to show time remaining for crossing status
-- [ ] Broadcast expiration events via Pusher
+- [x] Add auto-expiration for "train crossing" status after 10 minutes
+- [x] Create scheduled job or API route to handle expiration
+- [x] Update UI to show time remaining for crossing status
+- [x] Broadcast expiration events via Pusher
 ```
 
 **Implementation Options:**

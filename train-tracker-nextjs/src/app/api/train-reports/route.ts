@@ -3,8 +3,8 @@ import { headers } from 'next/headers'
 import { pusherServer, PUSHER_CONFIG } from '@/lib/pusher-server'
 import { prisma } from '@/lib/prisma'
 
-// Default expiration time in minutes
-const TRAIN_CROSSING_EXPIRATION_MINUTES = 10;
+// Default expiration time in minutes (configurable via env)
+const TRAIN_CROSSING_EXPIRATION_MINUTES = parseInt(process.env.TRAIN_CROSSING_EXPIRATION_MINUTES || '10');
 
 export async function GET() {
   try {

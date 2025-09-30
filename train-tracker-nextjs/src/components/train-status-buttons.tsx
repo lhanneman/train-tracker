@@ -14,6 +14,7 @@ interface TrainStatusButtonsProps {
 export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) {
   const [isReporting, setIsReporting] = useState(false)
   const [cooldownSeconds, setCooldownSeconds] = useState(0)
+  const [reportCooldownSetting, setReportCooldownSetting] = useState(15) // Default to 15 seconds
 
   const {
     permissionState,
@@ -23,6 +24,21 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
     requestPermission,
     getCurrentLocation
   } = useLocationPermission()
+
+  // Fetch cooldown setting from config
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/config')
+        const data = await response.json()
+        setReportCooldownSetting(data.data.reportCooldownSeconds)
+      } catch (error) {
+        console.error('Failed to fetch config:', error)
+        // Keep default of 15 seconds if fetch fails
+      }
+    }
+    fetchConfig()
+  }, [])
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null
@@ -63,7 +79,7 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
       }
 
       await onStatusReport(isTrainCrossing, location || undefined)
-      setCooldownSeconds(60) // 1 minute cooldown
+      setCooldownSeconds(reportCooldownSetting) // Use configurable cooldown
     } catch (error) {
       console.error('Failed to submit report:', error)
     }
