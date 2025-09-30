@@ -11,12 +11,15 @@ datasource db {
 }
 
 model TrainReport {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   isTrainCrossing Boolean
-  reportedAt     DateTime @default(now())
+  reportedAt     DateTime  @default(now())
+  expiresAt      DateTime? // Only set for train crossing reports (null for clear reports)
   userIpAddress  String
   userAgent      String
   sessionId      String
 
   @@map("TrainReports")
+  @@index([expiresAt])
+  @@index([reportedAt])
 }

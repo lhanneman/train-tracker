@@ -1,11 +1,18 @@
-import { TrainIcon, CheckCircleIcon, HelpCircleIcon } from "lucide-react"
+import { TrainIcon, CheckCircleIcon, HelpCircleIcon, ClockIcon } from "lucide-react"
 import { Card } from "@/components/ui/card"
 
 interface StatusIndicatorProps {
   status: boolean | null
+  timeUntilExpiry?: number | null // seconds until expiry
 }
 
-export function StatusIndicator({ status }: StatusIndicatorProps) {
+export function StatusIndicator({ status, timeUntilExpiry }: StatusIndicatorProps) {
+  // Format time into MM:SS
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
   const getStatusConfig = () => {
     if (status === true) {
       return {
@@ -49,6 +56,16 @@ export function StatusIndicator({ status }: StatusIndicatorProps) {
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-2">{config.label}</h2>
           <p className="text-muted-foreground">{config.description}</p>
+
+          {/* Countdown Timer for Train Crossing */}
+          {status === true && timeUntilExpiry !== null && timeUntilExpiry > 0 && (
+            <div className="mt-3 flex items-center justify-center gap-2 text-sm">
+              <ClockIcon className="h-4 w-4 text-orange-600" />
+              <span className="text-orange-600 font-medium">
+                Auto-clears in {formatTime(timeUntilExpiry)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </Card>

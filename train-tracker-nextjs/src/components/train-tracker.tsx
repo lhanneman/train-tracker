@@ -16,6 +16,7 @@ export function TrainTracker() {
   const [latestReport, setLatestReport] = useState<TrainReport | null>(null);
   const [recentReports, setRecentReports] = useState<TrainReport[]>([]);
   const [connectionState, setConnectionState] = useState<'Connected' | 'Disconnected'>('Disconnected');
+  const [timeUntilExpiry, setTimeUntilExpiry] = useState<number | null>(null);
 
   // Location permission and geo-fence status
   const { permissionState, geofenceStatus, getCurrentLocation, locationData } = useLocationPermission();
@@ -145,6 +146,55 @@ export function TrainTracker() {
     }
   };
 
+  // Auto-expiration timer for train crossing reports
+  useEffect(() => {
+    if (latestReport?.isTrainCrossing && latestReport.expiresAt) {
+      const updateTimer = () => {
+        const expiresAt = new Date(latestReport.expiresAt!);
+        const now = new Date();
+        const msUntilExpiry = expiresAt.getTime() - now.getTime();
+
+        if (msUntilExpiry > 0) {
+          setTimeUntilExpiry(Math.floor(msUntilExpiry / 1000)); // Convert to seconds
+
+          // Set timer to clear the status when it expires
+          const expirationTimer = setTimeout(() => {
+            console.log('Train crossing status expired');
+            setLatestReport(null);
+            setTimeUntilExpiry(null);
+          }, msUntilExpiry);
+
+          return () => clearTimeout(expirationTimer);
+        } else {
+          // Already expired
+          setLatestReport(null);
+          setTimeUntilExpiry(null);
+        }
+      };
+
+      updateTimer();
+
+      // Update countdown every second
+      const countdownInterval = setInterval(() => {
+        if (latestReport?.expiresAt) {
+          const expiresAt = new Date(latestReport.expiresAt);
+          const now = new Date();
+          const msUntilExpiry = expiresAt.getTime() - now.getTime();
+
+          if (msUntilExpiry > 0) {
+            setTimeUntilExpiry(Math.floor(msUntilExpiry / 1000));
+          } else {
+            setTimeUntilExpiry(null);
+          }
+        }
+      }, 1000);
+
+      return () => clearInterval(countdownInterval);
+    } else {
+      setTimeUntilExpiry(null);
+    }
+  }, [latestReport]);
+
   // Initialize and load data
   useEffect(() => {
     loadData();
@@ -250,7 +300,10 @@ export function TrainTracker() {
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Status and Controls */}
           <div className="lg:col-span-2 space-y-6">
-            <StatusIndicator status={latestReport?.isTrainCrossing ?? null} />
+            <StatusIndicator
+              status={latestReport?.isTrainCrossing ?? null}
+              timeUntilExpiry={timeUntilExpiry}
+            />
             <TrainStatusButtons
               onStatusReport={handleReportSubmitted}
             />

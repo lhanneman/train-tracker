@@ -3,9 +3,31 @@ import { headers } from 'next/headers'
 import { pusherServer, PUSHER_CONFIG } from '@/lib/pusher-server'
 import { prisma } from '@/lib/prisma'
 
+// Default expiration time in minutes
+const TRAIN_CROSSING_EXPIRATION_MINUTES = 10;
+
 export async function GET() {
   try {
+    // Get current time for filtering expired reports
+    const now = new Date();
+
     const reports = await prisma.trainReport.findMany({
+      where: {
+        OR: [
+          { isTrainCrossing: false }, // All clear reports are always valid
+          {
+            AND: [
+              { isTrainCrossing: true },
+              {
+                OR: [
+                  { expiresAt: null }, // Old reports without expiration
+                  { expiresAt: { gt: now } } // Not expired yet
+                ]
+              }
+            ]
+          }
+        ]
+      },
       orderBy: { reportedAt: 'desc' },
       take: 20 // Limit to most recent 20 reports
     })
@@ -15,6 +37,7 @@ export async function GET() {
         id: report.id,
         isTrainCrossing: report.isTrainCrossing,
         reportedAt: report.reportedAt.toISOString(),
+        expiresAt: report.expiresAt?.toISOString() || null,
         userIpAddress: report.userIpAddress,
         userAgent: report.userAgent,
         sessionId: report.sessionId
@@ -50,9 +73,15 @@ export async function POST(request: NextRequest) {
     // Generate a simple session ID (in production, you might want to use a proper session management)
     const sessionId = Math.random().toString(36).substring(2, 15)
 
+    // Calculate expiration time for train crossing reports
+    const expiresAt = isTrainCrossing
+      ? new Date(Date.now() + TRAIN_CROSSING_EXPIRATION_MINUTES * 60 * 1000)
+      : null;
+
     const newReport = await prisma.trainReport.create({
       data: {
         isTrainCrossing,
+        expiresAt,
         userIpAddress,
         userAgent,
         sessionId
@@ -63,6 +92,7 @@ export async function POST(request: NextRequest) {
       id: newReport.id,
       isTrainCrossing: newReport.isTrainCrossing,
       reportedAt: newReport.reportedAt.toISOString(),
+      expiresAt: newReport.expiresAt?.toISOString() || null,
       userIpAddress: newReport.userIpAddress,
       userAgent: newReport.userAgent,
       sessionId: newReport.sessionId

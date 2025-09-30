@@ -30,7 +30,7 @@ export const TRAIN_CROSSINGS: CrossingPoint[] = [
 // Configuration for distance-based geofencing
 export const CROSSING_GEOFENCE_CONFIG = {
   // Maximum distance from a crossing to allow reports (in meters)
-  maxDistanceMeters: 500, // Adjust this value as needed (e.g., 200m, 500m, etc.)
+  maxDistanceMeters: 1000, // Adjust this value as needed (e.g., 200m, 500m, etc.)
 
   // Minimum GPS accuracy required (in meters)
   minAccuracyMeters: 100,

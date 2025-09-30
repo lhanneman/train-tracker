@@ -3,7 +3,26 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
+    const now = new Date();
+
+    // Get the latest valid report (not expired)
     const latestReport = await prisma.trainReport.findFirst({
+      where: {
+        OR: [
+          { isTrainCrossing: false }, // All clear reports are always valid
+          {
+            AND: [
+              { isTrainCrossing: true },
+              {
+                OR: [
+                  { expiresAt: null }, // Old reports without expiration
+                  { expiresAt: { gt: now } } // Not expired yet
+                ]
+              }
+            ]
+          }
+        ]
+      },
       orderBy: { reportedAt: 'desc' }
     })
 
@@ -13,17 +32,14 @@ export async function GET() {
       })
     }
 
-    // Consider reports older than 30 minutes as stale
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
-    const isStale = latestReport.reportedAt < thirtyMinutesAgo
-
     return NextResponse.json({
       data: {
-        status: isStale ? null : latestReport.isTrainCrossing,
+        status: latestReport.isTrainCrossing,
         lastReport: {
           id: latestReport.id,
           isTrainCrossing: latestReport.isTrainCrossing,
           reportedAt: latestReport.reportedAt.toISOString(),
+          expiresAt: latestReport.expiresAt?.toISOString() || null,
           sessionId: latestReport.sessionId
         }
       }
