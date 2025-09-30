@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { TrainIcon, CheckCircleIcon, MapPinIcon, AlertCircleIcon } from "lucide-react"
 import { useLocationPermission, LocationData } from "@/hooks/useLocationPermission"
-import { GEOFENCE_CONFIG } from "@/config/geofence"
+import { CROSSING_GEOFENCE_CONFIG } from "@/config/geofence-crossings"
 
 interface TrainStatusButtonsProps {
   onStatusReport: (isTrainCrossing: boolean, location?: LocationData) => void
@@ -56,7 +56,7 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
       const location = await getCurrentLocation()
 
       // Check if location is within geo-fence (only if enforcement is enabled)
-      if (GEOFENCE_CONFIG.enforceGeofence && location && geofenceStatus && !geofenceStatus.isValid) {
+      if (CROSSING_GEOFENCE_CONFIG.enforceGeofence && location && geofenceStatus && !geofenceStatus.isValid) {
         // Location is outside geo-fence, don't submit
         console.warn('Report blocked: Outside geo-fence', geofenceStatus.reason)
         return
@@ -72,7 +72,7 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
   }
 
   // Only consider geofence status if enforcement is enabled
-  const isOutsideGeofence = GEOFENCE_CONFIG.enforceGeofence && geofenceStatus ? !geofenceStatus.isValid : false
+  const isOutsideGeofence = CROSSING_GEOFENCE_CONFIG.enforceGeofence && geofenceStatus ? !geofenceStatus.isValid : false
   const isDisabled = isReporting || cooldownSeconds > 0 || isLocationLoading ||
                      permissionState === 'unsupported' || isOutsideGeofence
   const isReadOnly = permissionState === 'denied' || permissionState === 'unsupported' || isOutsideGeofence
@@ -157,10 +157,9 @@ export function TrainStatusButtons({ onStatusReport }: TrainStatusButtonsProps) 
               <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
                 {geofenceStatus.reason}
               </p>
-              {geofenceStatus.nearestZone && (
+              {geofenceStatus.distanceDescription && (
                 <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                  Nearest zone: {geofenceStatus.nearestZone.zone.name}
-                  ({Math.round(geofenceStatus.nearestZone.distance)}m away)
+                  {geofenceStatus.distanceDescription}
                 </p>
               )}
             </div>

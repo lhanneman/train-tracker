@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { validateGeofence, getNearestZone } from '@/lib/geofence-utils';
-import type { GeoFenceZone } from '@/config/geofence';
+import { validateCrossingGeofence, getDistanceDescription } from '@/lib/geofence-crossings-utils';
+import type { CrossingPoint } from '@/config/geofence-crossings';
 
 export type LocationPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported';
 
@@ -12,9 +12,9 @@ export interface LocationData {
 
 export interface GeofenceStatus {
   isValid: boolean;
-  isInZone: boolean;
-  zones: GeoFenceZone[];
-  nearestZone?: { zone: GeoFenceZone; distance: number };
+  isInRange: boolean;
+  nearestCrossing?: { crossing: CrossingPoint; distance: number };
+  distanceDescription?: string;
   reason?: string;
 }
 
@@ -89,22 +89,20 @@ export function useLocationPermission(): UseLocationPermissionReturn {
         setLocationData(data);
 
         // Check geo-fence status
-        const validation = validateGeofence(
+        const validation = validateCrossingGeofence(
           data.latitude,
           data.longitude,
           data.accuracy
         );
 
-        const nearestZone = getNearestZone({
-          lat: data.latitude,
-          lng: data.longitude
-        });
-
         const status: GeofenceStatus = {
           isValid: validation.isValid,
-          isInZone: validation.isInZone,
-          zones: validation.zones,
-          nearestZone: nearestZone || undefined,
+          isInRange: validation.isInRange,
+          nearestCrossing: validation.nearestCrossing ? {
+            crossing: validation.nearestCrossing,
+            distance: validation.distanceToNearest!
+          } : undefined,
+          distanceDescription: getDistanceDescription(data.latitude, data.longitude),
           reason: validation.reason
         };
 
@@ -163,22 +161,20 @@ export function useLocationPermission(): UseLocationPermissionReturn {
   }, [permissionState, updateLocation]);
 
   const checkGeofence = useCallback((location: LocationData): GeofenceStatus => {
-    const validation = validateGeofence(
+    const validation = validateCrossingGeofence(
       location.latitude,
       location.longitude,
       location.accuracy
     );
 
-    const nearestZone = getNearestZone({
-      lat: location.latitude,
-      lng: location.longitude
-    });
-
     const status: GeofenceStatus = {
       isValid: validation.isValid,
-      isInZone: validation.isInZone,
-      zones: validation.zones,
-      nearestZone: nearestZone || undefined,
+      isInRange: validation.isInRange,
+      nearestCrossing: validation.nearestCrossing ? {
+        crossing: validation.nearestCrossing,
+        distance: validation.distanceToNearest!
+      } : undefined,
+      distanceDescription: getDistanceDescription(location.latitude, location.longitude),
       reason: validation.reason
     };
 
