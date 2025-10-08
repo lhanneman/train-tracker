@@ -190,10 +190,10 @@ Important features to implement for production:
 
 #### Conflicting Reports Handling
 ```bash
-- [ ] Implement weighted voting system based on recent reports
-- [ ] Add confidence scoring for status determination
-- [ ] Track user reliability over time (optional)
-- [ ] Flag suspicious patterns (same IP/session rapid conflicting reports)
+- [x] Implement weighted voting system based on recent reports
+- [x] Add confidence scoring for status determination
+- [x] Track user reliability over time (optional)
+- [x] Flag suspicious patterns (same IP/session rapid conflicting reports)
 ```
 
 **Strategies to Consider:**

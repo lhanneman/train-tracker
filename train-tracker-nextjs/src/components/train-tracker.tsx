@@ -4,86 +4,71 @@ import { useEffect, useState } from 'react';
 import { TrainStatusButtons } from './train-status-buttons';
 import { RecentReports } from './recent-reports';
 import { StatusIndicator } from './status-indicator';
-import { TrainIcon, ActivityIcon, MapPinIcon, UsersIcon } from 'lucide-react';
+import { TrainIcon, MapPinIcon } from 'lucide-react';
 import type { TrainReport } from '@/types';
 import type { LocationData } from '@/hooks/useLocationPermission';
 import { useLocationPermission } from '@/hooks/useLocationPermission';
-import { useActiveUsers } from '@/hooks/useActiveUsers';
 import { pusherClient, PUSHER_CONFIG } from '@/lib/pusher-client';
 import { validateGeofence } from '@/lib/geofence-utils';
+
+// Helper function to format time ago
+function getTimeAgo(date: Date | null): string {
+  if (!date) return 'Never';
+
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return 'Just now';
+  if (seconds < 120) return '1m ago';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 7200) return '1h ago';
+  return `${Math.floor(seconds / 3600)}h ago`;
+}
 
 export function TrainTracker() {
   const [latestReport, setLatestReport] = useState<TrainReport | null>(null);
   const [recentReports, setRecentReports] = useState<TrainReport[]>([]);
-  const [connectionState, setConnectionState] = useState<'Connected' | 'Disconnected'>('Disconnected');
+  const [connectionState, setConnectionState] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [timeAgo, setTimeAgo] = useState<string>('Never');
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<number | null>(null);
+  const [crossingReportCount, setCrossingReportCount] = useState<number>(0);
 
   // Location permission and geo-fence status
   const { permissionState, geofenceStatus, getCurrentLocation, locationData } = useLocationPermission();
 
-  // Active users tracking
-  const { activeUsers, isConnected: usersConnected } = useActiveUsers();
-
-  // Expose test functions to browser console for debugging
+  // Calculate crossing report count for current instance
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as unknown as { testGeofence: (lat: number, lng: number, accuracy?: number) => unknown }).testGeofence = (lat: number, lng: number, accuracy = 50) => {
-        const result = validateGeofence(lat, lng, accuracy);
-        console.log(`Testing coordinates: ${lat}, ${lng}`);
-        console.log('Result:', result);
-        return result;
-      };
-
-      (window as unknown as { debugGeofence: () => void }).debugGeofence = () => {
-        console.log('=== Geo-fence Debug Info ===');
-        console.log('Permission state:', permissionState);
-        console.log('Location data:', locationData);
-        console.log('Geofence status:', geofenceStatus);
-        console.log('Test coordinates for your house center: testGeofence(40.9241, -96.5267)');
-        console.log('Test coordinates for train tracks center: testGeofence(40.9181, -96.5314)');
-      };
-
-      (window as unknown as { getMyLocation: () => Promise<unknown> }).getMyLocation = async () => {
-        console.log('🌍 Getting your current location...');
-        const location = await getCurrentLocation();
-        console.log('Your location:', location);
-        return location;
-      };
-
-      (window as unknown as { forceLocation: () => void }).forceLocation = () => {
-        console.log('🔧 Forcing location with high accuracy...');
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              console.log('✅ Success! Your coordinates:');
-              console.log(`Latitude: ${position.coords.latitude}`);
-              console.log(`Longitude: ${position.coords.longitude}`);
-              console.log(`Accuracy: ${position.coords.accuracy}m`);
-
-              // Also test geo-fence with these coordinates
-              const result = validateGeofence(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
-              console.log('🎯 Geo-fence test result:', result);
-            },
-            (error) => {
-              console.error('❌ Location error:', error.message);
-              console.log('Try enabling location services or going outside for better GPS signal');
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 0
-            }
-          );
-        }
-      };
-
-      console.log('🔧 Geo-fence test functions loaded:');
-      console.log('- testGeofence(lat, lng) - Test specific coordinates');
-      console.log('- debugGeofence() - Show current status');
-      console.log('- getMyLocation() - Manually get your GPS location');
-      console.log('- forceLocation() - Force GPS with high accuracy');
+    if (!latestReport?.isTrainCrossing) {
+      setCrossingReportCount(0);
+      return;
     }
-  }, [permissionState, geofenceStatus, getCurrentLocation, locationData]);
+
+    // Find all consecutive "crossing" reports since the last "clear" report
+    let count = 0;
+    for (const report of recentReports) {
+      if (report.isTrainCrossing) {
+        count++;
+      } else {
+        // Hit a "clear" report, stop counting
+        break;
+      }
+    }
+
+    setCrossingReportCount(count);
+  }, [latestReport, recentReports]);
+
+  // Update time ago display every 10 seconds
+  useEffect(() => {
+    const updateTimeAgo = () => {
+      setTimeAgo(getTimeAgo(lastUpdated));
+    };
+
+    updateTimeAgo(); // Initial update
+    const interval = setInterval(updateTimeAgo, 10000); // Update every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
+
 
   // Load initial data
   const loadData = async () => {
@@ -105,10 +90,9 @@ export function TrainTracker() {
         setRecentReports(reportsData.data);
       }
 
-      setConnectionState('Connected');
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to load initial data:', error);
-      setConnectionState('Disconnected');
     }
   };
 
@@ -134,12 +118,8 @@ export function TrainTracker() {
         throw new Error('Failed to submit report');
       }
 
-      const result = await response.json();
-      if (result.data) {
-        // Update the latest report and add to recent reports
-        setLatestReport(result.data);
-        setRecentReports(prev => [result.data, ...prev].slice(0, 20));
-      }
+      // Don't update state here - let Pusher handle it to avoid duplicates
+      // The server will broadcast via Pusher and we'll receive it in the channel.bind handler
     } catch (error) {
       console.error('Failed to submit report:', error);
       throw error; // Re-throw so the component can handle it
@@ -199,8 +179,45 @@ export function TrainTracker() {
   useEffect(() => {
     loadData();
 
-    // Set up Pusher real-time subscription
+    // Set up Pusher real-time subscription (this initializes Pusher)
     const channel = pusherClient.subscribe(PUSHER_CONFIG.channel);
+
+    // Now get the instance and set up connection state monitoring
+    const pusher = pusherClient.getInstance();
+
+    if (pusher) {
+      // Set initial state based on current connection
+      const currentState = pusher.connection.state;
+
+      if (currentState === 'connected') {
+        setConnectionState('connected');
+      } else if (currentState === 'disconnected' || currentState === 'failed' || currentState === 'unavailable') {
+        setConnectionState('disconnected');
+      } else {
+        setConnectionState('connecting');
+      }
+
+      // Bind to state change events
+      pusher.connection.bind('connected', () => {
+        setConnectionState('connected');
+      });
+
+      pusher.connection.bind('disconnected', () => {
+        setConnectionState('disconnected');
+      });
+
+      pusher.connection.bind('connecting', () => {
+        setConnectionState('connecting');
+      });
+
+      pusher.connection.bind('unavailable', () => {
+        setConnectionState('disconnected');
+      });
+
+      pusher.connection.bind('failed', () => {
+        setConnectionState('disconnected');
+      });
+    }
 
     channel.bind(PUSHER_CONFIG.events.newReport, (newReport: TrainReport) => {
       console.log('Received new train report via Pusher:', newReport);
@@ -211,8 +228,8 @@ export function TrainTracker() {
       // Add to recent reports (prepend and limit to 20)
       setRecentReports(prev => [newReport, ...prev].slice(0, 20));
 
-      // Update connection state to show we're receiving real-time data
-      setConnectionState('Connected');
+      // Update last updated timestamp
+      setLastUpdated(new Date());
     });
 
     // Set up polling as fallback every 60 seconds (less frequent since we have real-time)
@@ -222,6 +239,15 @@ export function TrainTracker() {
       clearInterval(interval);
       channel.unbind_all();
       pusherClient.unsubscribe(PUSHER_CONFIG.channel);
+
+      // Cleanup Pusher connection state listeners
+      if (pusher) {
+        pusher.connection.unbind('connected');
+        pusher.connection.unbind('disconnected');
+        pusher.connection.unbind('connecting');
+        pusher.connection.unbind('unavailable');
+        pusher.connection.unbind('failed');
+      }
     };
   }, []);
 
@@ -245,30 +271,21 @@ export function TrainTracker() {
 
             {/* Status Indicators - Mobile: Horizontal scroll if needed, Desktop: Normal flex */}
             <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto">
-              {/* Connection Status */}
+              {/* Connection Status & Last Updated */}
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <ActivityIcon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${connectionState === 'Connected' ? "text-green-600" : "text-muted-foreground"}`} />
+                <div className={`h-2 w-2 rounded-full ${
+                  connectionState === 'connected' ? 'bg-green-500' :
+                  connectionState === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                  'bg-red-500'
+                }`} />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                  {connectionState}
+                  {timeAgo}
                 </span>
               </div>
-
-              {/* Active Users Count */}
-              {usersConnected && (
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <UsersIcon className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-blue-600" />
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                    {activeUsers} active
-                  </span>
-                </div>
-              )}
 
               {/* Geo-fence Status */}
               {permissionState === 'granted' && (
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <div className={`h-2 w-2 rounded-full ${
-                    geofenceStatus?.isValid ? 'bg-green-500' : 'bg-orange-500'
-                  }`} />
                   <MapPinIcon className={`h-3.5 sm:h-4 w-3.5 sm:w-4 ${
                     geofenceStatus?.isValid ? 'text-green-600' : 'text-orange-500'
                   }`} />
@@ -283,7 +300,6 @@ export function TrainTracker() {
               {/* Location Permission Status */}
               {permissionState !== 'granted' && permissionState !== 'unsupported' && (
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
                   <MapPinIcon className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-yellow-600" />
                   <span className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400 whitespace-nowrap">
                     Location Needed
@@ -303,6 +319,7 @@ export function TrainTracker() {
             <StatusIndicator
               status={latestReport?.isTrainCrossing ?? null}
               timeUntilExpiry={timeUntilExpiry}
+              reportCount={crossingReportCount}
             />
             <TrainStatusButtons
               onStatusReport={handleReportSubmitted}

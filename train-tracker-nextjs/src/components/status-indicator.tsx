@@ -4,9 +4,10 @@ import { Card } from "@/components/ui/card"
 interface StatusIndicatorProps {
   status: boolean | null
   timeUntilExpiry?: number | null // seconds until expiry
+  reportCount?: number // number of reports for current crossing instance
 }
 
-export function StatusIndicator({ status, timeUntilExpiry }: StatusIndicatorProps) {
+export function StatusIndicator({ status, timeUntilExpiry, reportCount = 0 }: StatusIndicatorProps) {
   // Format time into MM:SS
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -56,6 +57,13 @@ export function StatusIndicator({ status, timeUntilExpiry }: StatusIndicatorProp
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-2">{config.label}</h2>
           <p className="text-muted-foreground">{config.description}</p>
+
+          {/* Report count for train crossing */}
+          {status === true && reportCount > 0 && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Based on {reportCount} {reportCount === 1 ? 'report' : 'reports'}
+            </p>
+          )}
 
           {/* Countdown Timer for Train Crossing */}
           {status === true && timeUntilExpiry !== null && timeUntilExpiry !== undefined && timeUntilExpiry > 0 && (

@@ -64,6 +64,8 @@ export const pusherClient = {
     }
   },
   disconnect: () => pusherClientInstance?.disconnect(),
+  // Access to the raw Pusher instance for connection state monitoring
+  getInstance: () => pusherClientInstance,
 }
 
 // Channel and event names
