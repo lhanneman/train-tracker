@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Broadcast the new report to all connected clients
     try {
-      await pusherServer.trigger(
+      await pusherServer?.trigger(
         PUSHER_CONFIG.channel,
         PUSHER_CONFIG.events.newReport,
         reportData

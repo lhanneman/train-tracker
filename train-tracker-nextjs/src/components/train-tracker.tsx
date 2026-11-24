@@ -9,7 +9,6 @@ import type { TrainReport } from '@/types';
 import type { LocationData } from '@/hooks/useLocationPermission';
 import { useLocationPermission } from '@/hooks/useLocationPermission';
 import { pusherClient, PUSHER_CONFIG } from '@/lib/pusher-client';
-import { validateGeofence } from '@/lib/geofence-utils';
 
 // Helper function to format time ago
 function getTimeAgo(date: Date | null): string {
@@ -34,7 +33,7 @@ export function TrainTracker() {
   const [crossingReportCount, setCrossingReportCount] = useState<number>(0);
 
   // Location permission and geo-fence status
-  const { permissionState, geofenceStatus, getCurrentLocation, locationData } = useLocationPermission();
+  const { permissionState, geofenceStatus } = useLocationPermission();
 
   // Calculate crossing report count for current instance
   useEffect(() => {
@@ -79,6 +78,10 @@ export function TrainTracker() {
         fetch('/api/train-reports')
       ]);
 
+      if (!statusResult.ok || !reportsResult.ok) {
+        throw new Error('Could not load train reports and status');
+      }
+
       const statusData = await statusResult.json();
       const reportsData = await reportsResult.json();
 
@@ -94,6 +97,15 @@ export function TrainTracker() {
     } catch (error) {
       console.error('Failed to load initial data:', error);
     }
+  };
+
+  const receiveReport = (report: TrainReport) => {
+    setLatestReport(current => current && current.id > report.id ? current : report);
+    setRecentReports(current => {
+      if (current.some(item => item.id === report.id)) return current;
+      return [...current, report].sort((a, b) => b.id - a.id).slice(0, 20);
+    });
+    setLastUpdated(new Date());
   };
 
   // Handle new report submission with location data
@@ -118,61 +130,35 @@ export function TrainTracker() {
         throw new Error('Failed to submit report');
       }
 
-      // Don't update state here - let Pusher handle it to avoid duplicates
-      // The server will broadcast via Pusher and we'll receive it in the channel.bind handler
+      const { data } = await response.json();
+      receiveReport(data);
     } catch (error) {
       console.error('Failed to submit report:', error);
       throw error; // Re-throw so the component can handle it
     }
   };
 
-  // Auto-expiration timer for train crossing reports
   useEffect(() => {
-    if (latestReport?.isTrainCrossing && latestReport.expiresAt) {
-      const updateTimer = () => {
-        const expiresAt = new Date(latestReport.expiresAt!);
-        const now = new Date();
-        const msUntilExpiry = expiresAt.getTime() - now.getTime();
-
-        if (msUntilExpiry > 0) {
-          setTimeUntilExpiry(Math.floor(msUntilExpiry / 1000)); // Convert to seconds
-
-          // Set timer to clear the status when it expires
-          const expirationTimer = setTimeout(() => {
-            console.log('Train crossing status expired');
-            setLatestReport(null);
-            setTimeUntilExpiry(null);
-          }, msUntilExpiry);
-
-          return () => clearTimeout(expirationTimer);
-        } else {
-          // Already expired
-          setLatestReport(null);
-          setTimeUntilExpiry(null);
-        }
-      };
-
-      updateTimer();
-
-      // Update countdown every second
-      const countdownInterval = setInterval(() => {
-        if (latestReport?.expiresAt) {
-          const expiresAt = new Date(latestReport.expiresAt);
-          const now = new Date();
-          const msUntilExpiry = expiresAt.getTime() - now.getTime();
-
-          if (msUntilExpiry > 0) {
-            setTimeUntilExpiry(Math.floor(msUntilExpiry / 1000));
-          } else {
-            setTimeUntilExpiry(null);
-          }
-        }
-      }, 1000);
-
-      return () => clearInterval(countdownInterval);
-    } else {
+    if (!latestReport?.isTrainCrossing || !latestReport.expiresAt) {
       setTimeUntilExpiry(null);
+      return;
     }
+
+    const expiresAt = new Date(latestReport.expiresAt).getTime();
+    const updateCountdown = () => {
+      setTimeUntilExpiry(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
+    };
+
+    updateCountdown();
+    const countdown = setInterval(updateCountdown, 1000);
+    const expiration = setTimeout(() => {
+      setLatestReport(current => current?.id === latestReport.id ? null : current);
+    }, Math.max(0, expiresAt - Date.now()));
+
+    return () => {
+      clearInterval(countdown);
+      clearTimeout(expiration);
+    };
   }, [latestReport]);
 
   // Initialize and load data
@@ -184,6 +170,8 @@ export function TrainTracker() {
 
     // Now get the instance and set up connection state monitoring
     const pusher = pusherClient.getInstance();
+
+    if (!pusher) setConnectionState('disconnected');
 
     if (pusher) {
       // Set initial state based on current connection
@@ -222,14 +210,7 @@ export function TrainTracker() {
     channel.bind(PUSHER_CONFIG.events.newReport, (newReport: TrainReport) => {
       console.log('Received new train report via Pusher:', newReport);
 
-      // Update latest report
-      setLatestReport(newReport);
-
-      // Add to recent reports (prepend and limit to 20)
-      setRecentReports(prev => [newReport, ...prev].slice(0, 20));
-
-      // Update last updated timestamp
-      setLastUpdated(new Date());
+      receiveReport(newReport);
     });
 
     // Set up polling as fallback every 60 seconds (less frequent since we have real-time)
