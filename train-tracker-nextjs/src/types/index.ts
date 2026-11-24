@@ -1,18 +1,19 @@
 export interface TrainReport {
-  id: number;
-  isTrainCrossing: boolean;
-  reportedAt: string; // ISO 8601 datetime string
-  expiresAt: string | null; // ISO 8601 datetime string, null for "clear" reports
-  userIpAddress: string;
-  userAgent: string;
-  sessionId: string;
+  id: number
+  crossingId: string | null
+  isTrainCrossing: boolean
+  reportedAt: string
+  expiresAt: string | null
 }
 
-export interface CreateTrainReportRequest {
-  isTrainCrossing: boolean;
+export interface AreaStatus {
+  status: boolean | null
+  crossingReports: number
+  nextUpdateAt: string | null
 }
 
-export interface ApiResponse<T> {
-  data?: T;
-  error?: string;
+export interface TrackerSnapshot {
+  area: AreaStatus
+  recentReports: TrainReport[]
+  reportCooldownSeconds: number
 }

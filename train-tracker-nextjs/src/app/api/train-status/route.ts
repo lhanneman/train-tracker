@@ -1,47 +1,40 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { calculateConsensusStatus, getConsensusExplanation } from '@/lib/consensus-utils'
+import { calculateConsensusStatus } from '@/lib/consensus-utils'
+import { consensusTimeWindowMinutes, reportCooldownSeconds } from '@/lib/report-config'
+import { getRecentReports, publicReport, publicReportFields, realReport } from '@/lib/train-reports'
+import type { TrackerSnapshot } from '@/types'
 
 export async function GET() {
   try {
     const now = new Date()
+    const windowMs = consensusTimeWindowMinutes * 60_000
+    const [activeReports, recentReports] = await prisma.$transaction([
+      prisma.trainReport.findMany({
+        where: {
+          ...realReport,
+          reportedAt: { gt: new Date(now.getTime() - windowMs) },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+        select: publicReportFields,
+      }),
+      getRecentReports(now),
+    ], { isolationLevel: 'RepeatableRead' })
 
-    // Get all reports from the last 10 minutes (wider than consensus window for context)
-    const recentReports = await prisma.trainReport.findMany({
-      where: {
-        reportedAt: {
-          gte: new Date(now.getTime() - 10 * 60 * 1000) // Last 10 minutes
-        }
+    const result = calculateConsensusStatus(activeReports, now, windowMs)
+    const data: TrackerSnapshot = {
+      area: {
+        status: result.status,
+        crossingReports: result.recentReports.crossing,
+        nextUpdateAt: result.nextUpdateAt,
       },
-      orderBy: { reportedAt: 'desc' }
-    })
+      recentReports: recentReports.map(publicReport),
+      reportCooldownSeconds,
+    }
 
-    // Calculate consensus status
-    const consensus = calculateConsensusStatus(recentReports)
-
-    // Get the most recent report for additional context
-    const latestReport = recentReports[0] || null
-
-    return NextResponse.json({
-      data: {
-        status: consensus.status,
-        confidence: consensus.confidence,
-        explanation: getConsensusExplanation(consensus),
-        recentReports: consensus.recentReports,
-        lastReport: latestReport ? {
-          id: latestReport.id,
-          isTrainCrossing: latestReport.isTrainCrossing,
-          reportedAt: latestReport.reportedAt.toISOString(),
-          expiresAt: latestReport.expiresAt?.toISOString() || null,
-          sessionId: latestReport.sessionId
-        } : null
-      }
-    })
+    return NextResponse.json({ data }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('Failed to fetch train status:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch train status' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch train status' }, { status: 500 })
   }
 }

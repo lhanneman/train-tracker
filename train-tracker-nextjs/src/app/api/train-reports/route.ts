@@ -1,123 +1,80 @@
+import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { pusherServer, PUSHER_CONFIG } from '@/lib/pusher-server'
+import { CROSSING_GEOFENCE_CONFIG } from '@/config/geofence-crossings'
+import { isWithinReportingArea } from '@/lib/geofence-crossings-utils'
+import { pusherServer } from '@/lib/pusher-server'
+import { PUSHER_CONFIG } from '@/lib/pusher-config'
 import { prisma } from '@/lib/prisma'
-
-// Default expiration time in minutes (configurable via env)
-const TRAIN_CROSSING_EXPIRATION_MINUTES = parseInt(process.env.TRAIN_CROSSING_EXPIRATION_MINUTES || '10');
+import { reportCooldownSeconds } from '@/lib/report-config'
+import { getRecentReports, newestFirst, publicReport, publicReportFields, realReport, reportExpiry } from '@/lib/train-reports'
 
 export async function GET() {
   try {
-    // Get current time for filtering expired reports
-    const now = new Date();
-
-    const reports = await prisma.trainReport.findMany({
-      where: {
-        OR: [
-          { isTrainCrossing: false }, // All clear reports are always valid
-          {
-            AND: [
-              { isTrainCrossing: true },
-              {
-                OR: [
-                  { expiresAt: null }, // Old reports without expiration
-                  { expiresAt: { gt: now } } // Not expired yet
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      orderBy: { reportedAt: 'desc' },
-      take: 20 // Limit to most recent 20 reports
-    })
-
-    return NextResponse.json({
-      data: reports.map(report => ({
-        id: report.id,
-        isTrainCrossing: report.isTrainCrossing,
-        reportedAt: report.reportedAt.toISOString(),
-        expiresAt: report.expiresAt?.toISOString() || null,
-        userIpAddress: report.userIpAddress,
-        userAgent: report.userAgent,
-        sessionId: report.sessionId
-      }))
-    })
+    return NextResponse.json({ data: (await getRecentReports(new Date())).map(publicReport) })
   } catch (error) {
     console.error('Failed to fetch train reports:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch train reports' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch train reports' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => null)
+  const isTrainCrossing = body?.isTrainCrossing
+  if (typeof isTrainCrossing !== 'boolean') {
+    return NextResponse.json({ error: 'Choose a report type.' }, { status: 400 })
+  }
+
+  const location = body?.location
+  if (CROSSING_GEOFENCE_CONFIG.enforceGeofence && !isWithinReportingArea(location)) {
+    return NextResponse.json({ error: 'Share an accurate location near either Waverly crossing.' }, { status: 400 })
+  }
+
   try {
-    const headersList = await headers()
-    const userAgent = headersList.get('user-agent') || 'Unknown'
-    const forwardedFor = headersList.get('x-forwarded-for')
-    const realIp = headersList.get('x-real-ip')
-    const userIpAddress = forwardedFor?.split(',')[0] || realIp || 'Unknown'
+    const userIpAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip') || 'Unknown'
 
-    const body = await request.json()
-    const { isTrainCrossing } = body
-
-    if (typeof isTrainCrossing !== 'boolean') {
-      return NextResponse.json(
-        { error: 'isTrainCrossing must be a boolean' },
-        { status: 400 }
-      )
-    }
-
-    // Generate a simple session ID (in production, you might want to use a proper session management)
-    const sessionId = Math.random().toString(36).substring(2, 15)
-
-    // Calculate expiration time for train crossing reports
-    const expiresAt = isTrainCrossing
-      ? new Date(Date.now() + TRAIN_CROSSING_EXPIRATION_MINUTES * 60 * 1000)
-      : null;
-
-    const newReport = await prisma.trainReport.create({
-      data: {
-        isTrainCrossing,
-        expiresAt,
-        userIpAddress,
-        userAgent,
-        sessionId
+    const result = await prisma.$transaction(async db => {
+      // Serialize the cooldown check and insert for each reporter across app instances.
+      await db.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(624740, hashtext(${userIpAddress}))`
+      const now = new Date()
+      const lastReport = await db.trainReport.findFirst({
+        where: { ...realReport, userIpAddress, reportedAt: { gt: new Date(now.getTime() - reportCooldownSeconds * 1000) } },
+        orderBy: newestFirst,
+        select: { reportedAt: true },
+      })
+      if (lastReport) {
+        return { retryAfter: Math.ceil((lastReport.reportedAt.getTime() + reportCooldownSeconds * 1000 - now.getTime()) / 1000) }
       }
-    })
 
-    const reportData = {
-      id: newReport.id,
-      isTrainCrossing: newReport.isTrainCrossing,
-      reportedAt: newReport.reportedAt.toISOString(),
-      expiresAt: newReport.expiresAt?.toISOString() || null,
-      userIpAddress: newReport.userIpAddress,
-      userAgent: newReport.userAgent,
-      sessionId: newReport.sessionId
-    }
+      const report = await db.trainReport.create({
+        data: {
+          isTrainCrossing,
+          reportedAt: now,
+          expiresAt: reportExpiry(isTrainCrossing, now),
+          userIpAddress,
+          userAgent: request.headers.get('user-agent') || 'Unknown',
+          sessionId: randomUUID(),
+        },
+        select: publicReportFields,
+      })
+      return { report }
+    }, { isolationLevel: 'ReadCommitted' })
 
-    // Broadcast the new report to all connected clients
-    try {
-      await pusherServer?.trigger(
-        PUSHER_CONFIG.channel,
-        PUSHER_CONFIG.events.newReport,
-        reportData
+    if (!result.report) {
+      return NextResponse.json(
+        { error: 'Please wait before submitting another report.' },
+        { status: 429, headers: { 'Retry-After': String(result.retryAfter) } },
       )
-    } catch (pusherError) {
-      console.error('Failed to broadcast via Pusher:', pusherError)
-      // Continue even if Pusher fails - don't break the API
     }
 
-    return NextResponse.json({
-      data: reportData
-    })
+    try {
+      await pusherServer?.trigger(PUSHER_CONFIG.channel, PUSHER_CONFIG.events.newReport, {})
+    } catch (error) {
+      console.error('Failed to notify subscribers:', error)
+    }
+    return NextResponse.json({ data: publicReport(result.report) })
   } catch (error) {
     console.error('Failed to create train report:', error)
-    return NextResponse.json(
-      { error: 'Failed to create train report' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to save your report. Please try again.' }, { status: 500 })
   }
 }

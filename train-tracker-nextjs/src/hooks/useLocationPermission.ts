@@ -1,294 +1,70 @@
-import { useState, useEffect, useCallback } from 'react';
-import { validateCrossingGeofence, getDistanceDescription } from '@/lib/geofence-crossings-utils';
-import type { CrossingPoint } from '@/config/geofence-crossings';
+"use client"
 
-export type LocationPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported';
+import { useCallback, useEffect, useState } from 'react'
+import type { LocationData } from '@/lib/geofence-crossings-utils'
 
-export interface LocationData {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-}
+export function useLocationPermission() {
+  const [permission, setPermission] = useState<PermissionState | 'unsupported'>('prompt')
+  const [location, setLocation] = useState<LocationData | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-export interface GeofenceStatus {
-  isValid: boolean;
-  isInRange: boolean;
-  nearestCrossing?: { crossing: CrossingPoint; distance: number };
-  distanceDescription?: string;
-  reason?: string;
-}
-
-export interface UseLocationPermissionReturn {
-  permissionState: LocationPermissionState;
-  locationData: LocationData | null;
-  geofenceStatus: GeofenceStatus | null;
-  isLoading: boolean;
-  error: string | null;
-  requestPermission: () => Promise<boolean>;
-  getCurrentLocation: () => Promise<LocationData | null>;
-  checkGeofence: (location: LocationData) => GeofenceStatus;
-}
-
-const STORAGE_KEY = 'trainTracker_locationPermission';
-
-export function useLocationPermission(): UseLocationPermissionReturn {
-  const [permissionState, setPermissionState] = useState<LocationPermissionState>('prompt');
-  const [locationData, setLocationData] = useState<LocationData | null>(null);
-  const [geofenceStatus, setGeofenceStatus] = useState<GeofenceStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Check if geolocation is supported
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setPermissionState('unsupported');
-      setError('Geolocation is not supported by your browser');
-      return;
-    }
-
-    // Check stored permission state
-    const storedState = localStorage.getItem(STORAGE_KEY);
-    if (storedState === 'granted' || storedState === 'denied') {
-      setPermissionState(storedState as LocationPermissionState);
-    }
-
-    // Check actual permission state if available
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' as PermissionName })
-        .then((result) => {
-          setPermissionState(result.state as LocationPermissionState);
-          localStorage.setItem(STORAGE_KEY, result.state);
-
-          // Listen for permission changes
-          result.addEventListener('change', () => {
-            setPermissionState(result.state as LocationPermissionState);
-            localStorage.setItem(STORAGE_KEY, result.state);
-          });
-        })
-        .catch(() => {
-          // Permissions API not fully supported, use stored state or prompt
-          console.log('Permissions API not fully supported');
-        });
-    }
-  }, []);
-
-  // Helper function to get location and update state
-  const updateLocation = useCallback(() => {
-    if (!navigator.geolocation) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const data: LocationData = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        };
-        setLocationData(data);
-
-        // Check geo-fence status
-        const validation = validateCrossingGeofence(
-          data.latitude,
-          data.longitude,
-          data.accuracy
-        );
-
-        const status: GeofenceStatus = {
-          isValid: validation.isValid,
-          isInRange: validation.isInRange,
-          nearestCrossing: validation.nearestCrossing ? {
-            crossing: validation.nearestCrossing,
-            distance: validation.distanceToNearest!
-          } : undefined,
-          distanceDescription: getDistanceDescription(data.latitude, data.longitude),
-          reason: validation.reason
-        };
-
-        setGeofenceStatus(status);
-        setIsLoading(false);
-
-        if (validation.debug) {
-          console.log('Location update - geofence validation:', validation);
-        }
-      },
-      (err) => {
-        setIsLoading(false);
-        let errorMessage = 'Unable to get location';
-
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            errorMessage = 'Location permission denied';
-            setPermissionState('denied');
-            localStorage.setItem(STORAGE_KEY, 'denied');
-            break;
-          case err.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information unavailable';
-            break;
-          case err.TIMEOUT:
-            errorMessage = 'Location request timed out';
-            break;
-        }
-
-        setError(errorMessage);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 15000 // Cache for 15 seconds for periodic updates
-      }
-    );
-  }, []);
-
-  // Automatically get location when permission is granted
-  useEffect(() => {
-    if (permissionState === 'granted' && !locationData) {
-      updateLocation();
-    }
-  }, [permissionState, locationData, updateLocation]);
-
-  // Set up periodic location updates when permission is granted
-  useEffect(() => {
-    if (permissionState !== 'granted') return;
-
-    // Update location every 30 seconds
-    const interval = setInterval(() => {
-      updateLocation();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [permissionState, updateLocation]);
-
-  const checkGeofence = useCallback((location: LocationData): GeofenceStatus => {
-    const validation = validateCrossingGeofence(
-      location.latitude,
-      location.longitude,
-      location.accuracy
-    );
-
-    const status: GeofenceStatus = {
-      isValid: validation.isValid,
-      isInRange: validation.isInRange,
-      nearestCrossing: validation.nearestCrossing ? {
-        crossing: validation.nearestCrossing,
-        distance: validation.distanceToNearest!
-      } : undefined,
-      distanceDescription: getDistanceDescription(location.latitude, location.longitude),
-      reason: validation.reason
-    };
-
-    setGeofenceStatus(status);
-
-    // Log debug info if enabled
-    if (validation.debug) {
-      console.log('Geofence validation:', validation);
-    }
-
-    return status;
-  }, []);
-
-  const getCurrentLocation = useCallback(async (): Promise<LocationData | null> => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported');
-      return null;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    return new Promise((resolve) => {
+  const readLocation = useCallback(async (maximumAge = 0): Promise<LocationData | null> => {
+    if (!navigator.geolocation) return null
+    setIsLoading(true)
+    setError(null)
+    return new Promise(resolve => {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const data: LocationData = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          };
-          setLocationData(data);
-
-          // Check geo-fence status
-          checkGeofence(data);
-
-          setIsLoading(false);
-          resolve(data);
+        ({ coords }) => {
+          const position = { latitude: coords.latitude, longitude: coords.longitude, accuracy: coords.accuracy }
+          setPermission('granted')
+          setLocation(position)
+          setIsLoading(false)
+          resolve(position)
         },
-        (err) => {
-          setIsLoading(false);
-          let errorMessage = 'Unable to get location';
-
-          switch (err.code) {
-            case err.PERMISSION_DENIED:
-              errorMessage = 'Location permission denied';
-              setPermissionState('denied');
-              localStorage.setItem(STORAGE_KEY, 'denied');
-              break;
-            case err.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information unavailable';
-              break;
-            case err.TIMEOUT:
-              errorMessage = 'Location request timed out';
-              break;
-          }
-
-          setError(errorMessage);
-          resolve(null);
+        failure => {
+          if (failure.code === 1) setPermission('denied')
+          setLocation(null)
+          setError(failure.code === 1 ? 'Location access denied. Check your browser permissions.' : 'Could not get your location. Please try again.')
+          setIsLoading(false)
+          resolve(null)
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 30000 // Cache location for 30 seconds
-        }
-      );
-    });
-  }, [checkGeofence]);
+        { enableHighAccuracy: true, timeout: 10_000, maximumAge },
+      )
+    })
+  }, [])
 
-  const requestPermission = useCallback(async (): Promise<boolean> => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported');
-      return false;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Try to get current location - this will trigger permission prompt if needed
-      const location = await getCurrentLocation();
-
-      if (location) {
-        setPermissionState('granted');
-        localStorage.setItem(STORAGE_KEY, 'granted');
-        return true;
-      } else {
-        // Permission was denied or location failed
-        return false;
-      }
-    } catch {
-      setIsLoading(false);
-      return false;
-    }
-  }, [getCurrentLocation]);
-
-  // Automatically request permission on mount if it's in 'prompt' state
   useEffect(() => {
-    if (permissionState === 'prompt' && !isLoading) {
-      // Small delay to ensure the UI is rendered before requesting
-      const timer = setTimeout(() => {
-        requestPermission();
-      }, 500);
-      return () => clearTimeout(timer);
+    if (!navigator.geolocation) {
+      setPermission('unsupported')
+      return
     }
-  }, [permissionState, isLoading, requestPermission]);
 
-  return {
-    permissionState,
-    locationData,
-    geofenceStatus,
-    isLoading,
-    error,
-    requestPermission,
-    getCurrentLocation,
-    checkGeofence
-  };
+    let active = true
+    let observed: PermissionStatus | undefined
+    function updatePermission() {
+      if (!observed) return
+      setPermission(observed.state)
+      if (observed.state !== 'granted') setLocation(null)
+    }
+
+    navigator.permissions?.query({ name: 'geolocation' }).then(result => {
+      if (!active) return
+      observed = result
+      updatePermission()
+      observed.addEventListener('change', updatePermission)
+    }).catch(() => {})
+
+    return () => {
+      active = false
+      observed?.removeEventListener('change', updatePermission)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (permission !== 'granted') return
+    void readLocation(15_000)
+  }, [permission, readLocation])
+
+  return { permission, location, isLoading, error, readLocation }
 }

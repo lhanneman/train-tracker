@@ -11,11 +11,3 @@ export const pusherServer = PUSHER_APP_ID && PUSHER_KEY && PUSHER_SECRET && PUSH
       useTLS: true,
     })
   : null
-
-// Channel and event names
-export const PUSHER_CONFIG = {
-  channel: 'train-reports',
-  events: {
-    newReport: 'new-report',
-  },
-} as const

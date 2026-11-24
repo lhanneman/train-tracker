@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TrainIcon, CheckCircleIcon, ClockIcon, UserIcon } from "lucide-react"
+import { TrainIcon, CheckCircleIcon, ClockIcon, MapPinIcon } from "lucide-react"
+import { TRAIN_CROSSINGS } from '@/config/geofence-crossings'
 import type { TrainReport } from "@/types"
 
 interface RecentReportsProps {
@@ -37,7 +38,7 @@ export function RecentReports({ reports }: RecentReportsProps) {
           </div>
         ) : (
           reports.map((report, index) => (
-            <div key={`${report.id}-${index}`} className={`p-4 rounded-lg border bg-card/50 ${index === 0 ? "slide-in" : ""}`}>
+            <div key={report.id} className={`p-4 rounded-lg border bg-card/50 ${index === 0 ? "slide-in" : ""}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   {report.isTrainCrossing ? (
@@ -57,8 +58,8 @@ export function RecentReports({ reports }: RecentReportsProps) {
 
               <div className="text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <UserIcon className="h-3 w-3" />
-                  <span>Session {report.sessionId.substring(0, 8)}</span>
+                  <MapPinIcon className="h-3 w-3" />
+                  <span>{TRAIN_CROSSINGS.find(crossing => crossing.id === report.crossingId)?.name ?? 'Waverly crossing area'}</span>
                 </div>
               </div>
             </div>

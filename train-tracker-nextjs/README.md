@@ -34,3 +34,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Crossing status and local simulation
+
+When updating an existing database, apply [add-crossing-id.sql](add-crossing-id.sql)
+before deploying this version. The migration preserves optional crossing IDs in history. Reports made near
+either N 141st Street or N 148th Street contribute to one shared Waverly status.
+
+To open the consensus simulator at `/test`, run the development server against a
+dedicated local PostgreSQL database and set `ENABLE_LOCAL_SIMULATOR=true`. The
+simulator has its own report stream and is disabled in production.
+
+Run `npm test` with Node.js 22.15 or newer to check the crossing consensus and
+expiry rules.
