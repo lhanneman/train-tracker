@@ -81,10 +81,15 @@ export default function TestPage() {
 
   // Auto-refresh status every 10 seconds and fetch config on mount
   useEffect(() => {
-    fetchStatus()
-    fetchConfig()
+    const initialRefresh = setTimeout(() => {
+      void fetchStatus()
+      void fetchConfig()
+    }, 0)
     const interval = setInterval(fetchStatus, 10000)
-    return () => clearInterval(interval)
+    return () => {
+      clearTimeout(initialRefresh)
+      clearInterval(interval)
+    }
   }, [])
 
   const getStatusDisplay = () => {

@@ -36,6 +36,8 @@ export function useLocationPermission() {
 
   useEffect(() => {
     if (!navigator.geolocation) {
+      // Browser capabilities are only available after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPermission('unsupported')
       return
     }
@@ -63,7 +65,8 @@ export function useLocationPermission() {
 
   useEffect(() => {
     if (permission !== 'granted') return
-    void readLocation(15_000)
+    const initialRead = setTimeout(() => void readLocation(15_000), 0)
+    return () => clearTimeout(initialRead)
   }, [permission, readLocation])
 
   return { permission, location, isLoading, error, readLocation }

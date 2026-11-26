@@ -38,7 +38,7 @@ export function TrainTracker() {
   }, [])
 
   useEffect(() => {
-    void refresh()
+    const initialRefresh = setTimeout(refresh, 0)
     const poll = setInterval(refresh, 60_000)
     function refreshVisible() {
       if (document.visibilityState === 'visible') {
@@ -54,6 +54,7 @@ export function TrainTracker() {
     pusher?.connection.bind('connected', refresh)
 
     return () => {
+      clearTimeout(initialRefresh)
       clearInterval(poll)
       document.removeEventListener('visibilitychange', refreshVisible)
       channel?.unbind(PUSHER_CONFIG.events.newReport, refresh)

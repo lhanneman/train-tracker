@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { trainCrossingExpirationMinutes } from '@/lib/report-config'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '@/generated/prisma/client'
 import type { TrainReport } from '@/types'
 
 export const publicReportFields = {

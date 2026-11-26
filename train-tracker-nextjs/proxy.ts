@@ -10,7 +10,7 @@ const botUserAgents = [
   'python', 'curl', 'wget', 'axios', 'httpie'
 ]
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const userAgent = request.headers.get('user-agent')?.toLowerCase() || ''
 
   // Block known bots
